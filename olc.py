@@ -8,7 +8,7 @@ import time
 from Bio import SeqIO
 from operator import itemgetter
 from helpers import Graph, reverse_complement, index_reads, extend
-from main import start, stop, input_seqName, s, o_min, a, max_length, readList, assembly_file
+from main import start, stop, input_seqName, s, o_min, list_of_a, max_length, readList, assembly_file
 
 #Augmenter la taille maximale de la pile de recursion en Python:
 sys.setrecursionlimit(50000)
@@ -25,60 +25,64 @@ readWithStart = list of all reads containing the full sequence of the kmer start
 try:
     startTime = time.time()
 
-    seedDict = {}                                   #value of dict is a list of position (i) of reads in readList (-pos if revcomp of read)
-    readWithStart = []
-    pos_read_in_readList = 0
+    #Gap-filling with a specific abundance threshold
+    for a in list_of_a:
 
-    for read in readList:
-        #Seed the read and update the dictionary of the seeds of the reads
-        index_reads(read, pos_read_in_readList, seedDict)
+        seedDict = {}                                   #value of dict is a list of position (i) of reads in readList (-pos if revcomp of read)
+        readWithStart = []
+        pos_read_in_readList = 0
 
-        #Search if the read contains the whole kmer start's sequence and update the readWithStart list
-        read_rc = reverse_complement(read)
-        if start in read:
-            readWithStart.append([str(pos_read_in_readList), read.index(start)])
-        elif start in read_rc:
-            readWithStart.append(["-"+str(pos_read_in_readList), read_rc.index(start)])
+        for read in readList:
+            #Seed the read and update the dictionary of the seeds of the reads
+            index_reads(read, pos_read_in_readList, seedDict)
 
-        pos_read_in_readList += 1
+            #Search if the read contains the whole kmer start's sequence and update the readWithStart list
+            read_rc = reverse_complement(read)
+            if start in read:
+                readWithStart.append([str(pos_read_in_readList), read.index(start)])
+            elif start in read_rc:
+                readWithStart.append(["-"+str(pos_read_in_readList), read_rc.index(start)])
 
-    #Sort the readWithStart list by the minimum extension size (e.g. the maximum index)
-    readWithStart = sorted(readWithStart, key=itemgetter(1), reverse=True)
-    if len(readWithStart) == 0:
-        print("No read in the dataset provided contains the kmer start... \nHence, tentative of gapfilling aborted...")
-        sys.exit(1)
+            pos_read_in_readList += 1
 
-    #Create graph "à la volée"
-    nodes = {}
-    graph = Graph(nodes)
-    graph.add_node(start)
+        #Sort the readWithStart list by the minimum extension size (e.g. the maximum index)
+        readWithStart = sorted(readWithStart, key=itemgetter(1), reverse=True)
+        if len(readWithStart) == 0:
+            print("\nNo read in the dataset provided contains the kmer start... \nHence, tentative of gapfilling aborted...")
+            sys.exit(1)
 
-    #Extend the reads containing the whole kmer start's sequence
-    for (pos_read, index) in readWithStart:
-        #get the sequence of the read
-        if '-' in str(pos_read):
-            read = reverse_complement(readList[int(pos_read.split('-')[1])])
-        else:
-            read = readList[int(pos_read)]
+        #Create graph "à la volée"
+        nodes = {}
+        graph = Graph(nodes)
+        graph.add_node(start)
 
-        #update the graph with this read
-        graph.add_node(read)
-        graph.add_edge((start, read, 0))
-        
-        res, success = extend(read, read, seedDict, graph)
-        if not success:
-            print(res)
-        if success:
-            print("Successful Gapfilling !")
-            #Save the gapfilled sequence in the output_file
-            with open(assembly_file, "a") as assemblyFile:           #TODO: append or write ?
-                assembly_startbeg = res.index(start)
-                assembly_stopbeg = res.index(stop)
-                seq = res[assembly_startbeg:assembly_stopbeg+len(stop)]
-                seq_name = "assembly." + input_seqName + " len " + str(len(seq))
-                assemblyFile.write(">" + seq_name)
-                assemblyFile.write("\n" + seq + "\n")
-            break
+        #Extend the reads containing the whole kmer start's sequence
+        for (pos_read, index) in readWithStart:
+            #get the sequence of the read
+            if '-' in str(pos_read):
+                read = reverse_complement(readList[int(pos_read.split('-')[1])])
+            else:
+                read = readList[int(pos_read)]
+
+            #update the graph with this read
+            graph.add_node(read)
+            graph.add_edge((start, read, 0))
+            
+            #Extend the assembly sequence
+            res, success = extend(read, read, a, seedDict, graph)
+            if not success:
+                print(res)
+            if success:
+                print("\nAbundance threshold value: {} \nSuccessful Gapfilling !".format(a))
+                #Save the gapfilled sequence in the output_file
+                with open(assembly_file, "a") as assemblyFile:           #TODO: append or write ?
+                    assembly_startbeg = res.index(start)
+                    assembly_stopbeg = res.index(stop)
+                    seq = res[assembly_startbeg:assembly_stopbeg+len(stop)]
+                    seq_name = "assembly." + input_seqName + "_a" + str(a) + " len " + str(len(seq))
+                    assemblyFile.write(">" + seq_name)
+                    assemblyFile.write("\n" + seq + "\n")
+                break
 
     endTime = time.time()
     print("It took %f seconds" %(endTime-startTime))

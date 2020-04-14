@@ -31,7 +31,7 @@ parser.add_argument('-in', action="store", dest="input", help="input sequence to
 parser.add_argument('-reads', action="store", dest="reads", help="file of reads", required=True)
 parser.add_argument('-s', action="store", dest= "seed_size", type=int, help="seed size used for indexing the reads (bp)", required=True)
 parser.add_argument('-o', action="store", dest="min_overlap", type=int, help="minimum overlapping size (bp)", required=True)
-parser.add_argument('-a', action="store", dest="abundance_min", type=int, default=2, help="minimal abundance of reads used for gapfilling ; extension's groups having less than this number of reads are discarded from the graph")
+parser.add_argument('-a', action="store", dest="abundance_min", nargs='*', type=int, default=2, help="minimal abundance(s) of reads used for gapfilling ; extension's groups having less than this number of reads are discarded from the graph")
 parser.add_argument('-l', action="store", dest="max_length", type=int, help="maximum assembly length (bp) (it could correspond to the length of the gap to fill (+length input sequences) OR it could be a very high length to prevent for searching indefinitely", required=True)
 parser.add_argument('-out', action="store", dest="outdir", default="./olc_results", help="output directory for the results' files")
 
@@ -89,14 +89,14 @@ print("\nThe results are saved in " + outDir)
 #----------------------------------------------------
 s = args.seed_size
 o_min = args.min_overlap
-a = args.abundance_min
+list_of_a = args.abundance_min
 max_length = args.max_length
 
 #----------------------------------------------------
 # Output files for saving results
 #----------------------------------------------------
 #FASTA file containing all possible gapfilled sequences
-output_file = "assembly.s{}.o{}.a{}.olc_gapfilling.fasta".format(s, o_min, a)
+output_file = "assembly.s{}.o{}.olc_gapfilling.fasta".format(s, o_min)
 assembly_file = os.path.abspath(outDir +"/"+ output_file)
 
 #----------------------------------------------------

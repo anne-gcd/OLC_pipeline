@@ -4,7 +4,7 @@ import sys
 import re
 import subprocess
 import collections
-from main import start, stop, s, o_min, a, max_length, readList
+from main import start, stop, s, o_min, max_length, readList
 
 
 #----------------------------------------------------
@@ -173,25 +173,24 @@ def find_overlapping_reads(S, read, seedDict):
 #----------------------------------------------------
 '''
 To extend a read's sequence with overlapping reads
-    - it takes as input the current assembly's sequence (S), the read's sequence from which we want to extend, the seedDict dictionary and the current graph to update
+    - it takes as input the current assembly's sequence (S), the read's sequence from which we want to extend, the abundance threshold value, the seedDict dictionary and the current graph to update
     - it outputs the gapfilled sequence (S) if found/or the reason why the gapfilled failed, and a Boolean variable representing the success of the gapfilling
 extGroup = dictionary containing the extension's sequence as key, and the reads sharing this extension as value (value format: [read's sequence, index of beginning of overlap])
 '''
-def extend(S, read, seedDict, graph):
+def extend(S, read, a, seedDict, graph):
     #Base cases
     if stop in S[-len(read):]:
-        print("Path found from kmer start to kmer stop !")
         graph.add_node(stop)
         graph.add_edge((read, stop, 0))
         return S, True
 
     if len(S) > max_length:
-        return "|S| > max_length", False
+        return "\nAbundance threshold value: {} \n|S| > max_length".format(a), False
 
     #Search for reads overlapping with the current assembly S sequence
     overlapping_reads = find_overlapping_reads(S, read, seedDict)
     if len(overlapping_reads) == 0:
-        return "No overlapping reads", False
+        return "\nAbundance threshold value: {} \nNo overlapping reads".format(a), False
 
     #Group the overlapping reads by their extension
     extGroup = {}
@@ -227,7 +226,7 @@ def extend(S, read, seedDict, graph):
             del extGroup[extension]
 
     if len(extGroup) == 0:
-        return "No extension", False
+        return "\nAbundance threshold value: {} \nNo extension".format(a), False
 
     #Sort extGroup by the maximum overlap (e.g. by the minimal extension)
     extGroup = collections.OrderedDict(sorted(extGroup.items(), key=lambda t: len(t[0])))
@@ -237,7 +236,7 @@ def extend(S, read, seedDict, graph):
 
     #Iterative extension of the assembly's sequence S
     for extension in extGroup:
-        res, success = extend(S+extension, extGroup[extension][0][0], seedDict, graph)
+        res, success = extend(S+extension, extGroup[extension][0][0], a, seedDict, graph)
         if success:
             return res, True    
     return res, False
