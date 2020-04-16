@@ -84,7 +84,7 @@ To reverse complement a sequence:
     - it outputs the reverse complement's sequence of the input sequence
 '''
 def reverse_complement(S):  
-    complement = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A'} 
+    complement = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A', 'N': 'N'} 
     return ''.join([complement[base] for base in S[::-1]])
 
 
