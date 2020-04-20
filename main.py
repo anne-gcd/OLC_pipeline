@@ -13,19 +13,7 @@ from Bio import SeqIO
 #----------------------------------------------------
 parser = argparse.ArgumentParser(prog="olc.py", usage="%(prog)s -in <input_sequence> -reads <reads_file> -s <seed_size> -o <minimum_overlap_size> -l <maximum_assembly_length> [options]", \
                                 formatter_class=argparse.RawTextHelpFormatter, \
-                                description=(''' \
-                                Gapfilling, using an Overlap-Layout-Consensus (OLC) method
-                                -------------------------------------------------------------------------
-                                To be able to execute this script, you need to install a virtual environment containing Biopython.
-                                
-                                [Main options]: '-in': input sequence to gapfill (e.g. kmers start and stop for example)
-                                                '-reads': reads' file
-                                                '-s': seed size used for indexing the reads (bp)
-                                                '-o': minimum overlapping size (bp)
-                                                '-a': minimal abundance threshold [default '2']
-                                                '-l': maximum assembly length (bp)
-                                                '-out': output directory [default './olc_results']
-                                '''))
+                                description=("Gapfilling, using an Overlap-Layout-Consensus (OLC) method"))
 
 parser.add_argument('-in', action="store", dest="input", help="input sequence to gapfill (for example, kmers start and stop)", required=True)
 parser.add_argument('-reads', action="store", dest="reads", help="file of reads", required=True)
