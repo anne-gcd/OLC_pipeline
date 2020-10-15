@@ -11,11 +11,11 @@ from Bio import SeqIO
 #----------------------------------------------------
 # Arg parser
 #----------------------------------------------------
-parser = argparse.ArgumentParser(prog="olc.py", usage="%(prog)s -in <input_sequence> -reads <reads_file> -s <seed_size> -o <minimum_overlap_size> -l <maximum_assembly_length> [options]", \
+parser = argparse.ArgumentParser(prog="olc.py", usage="%(prog)s -in <input_sequences> -reads <reads_file> -s <seed_size> -o <minimum_overlap_size> -l <maximum_assembly_length> [options]", \
                                 formatter_class=argparse.RawTextHelpFormatter, \
                                 description=("Gapfilling, using an Overlap-Layout-Consensus (OLC) method"))
 
-parser.add_argument('-in', action="store", dest="input", help="Input sequence to gapfill (for example, kmers start and stop)", required=True)
+parser.add_argument('-in', action="store", dest="input", help="Input sequences to gapfill (for example, kmers start and stop)", required=True)
 parser.add_argument('-reads', action="store", dest="reads", help="File of reads", required=True)
 parser.add_argument('-s', action="store", dest= "seed_size", type=int, help="Seed size used for indexing the reads (bp)", required=True)
 parser.add_argument('-o', action="store", dest="min_overlap", type=int, help="Minimum overlapping size (bp)", required=True)
@@ -34,11 +34,13 @@ if not re.match('^.*.fasta$', args.reads) and not re.match('^.*.fa$', args.reads
 #----------------------------------------------------
 # Input files
 #----------------------------------------------------
+#File of input sequences to gap-fill
 input_file = os.path.abspath(args.input)
 if not os.path.exists(input_file):
     parser.error("\nThe path of the input file doesn't exist")
 print("\nInput file: " + input_file)
 
+#Reads file (FASTA or FASTQ)
 reads_file = os.path.abspath(args.reads)
 if not os.path.exists(reads_file):
     parser.error("The path of the reads' file doesn't exist")
@@ -81,7 +83,7 @@ list_of_a = args.abundance_min
 max_length = args.max_length
 
 #----------------------------------------------------
-# Output files for saving results
+# Output file for saving results
 #----------------------------------------------------
 #FASTA file containing all possible gapfilled sequences
 output_file = "assembly.s{}.o{}.olc_gapfilling.fasta".format(s, o_min)
@@ -90,9 +92,7 @@ assembly_file = os.path.abspath(outDir +"/"+ output_file)
 #----------------------------------------------------
 # Save reads' sequences in a list
 #----------------------------------------------------
-'''
-readList = list of all reads' sequences
-'''
+#readList = list of all reads' sequences
 readList = []
 
 with open(reads_file, "r") as readsFile:
