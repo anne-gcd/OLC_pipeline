@@ -12,18 +12,55 @@ from main import start, stop, s, o_min, max_length, readList
 #----------------------------------------------------
 #Initializes a Graph object: a dictionary will be used for storing the nodes and their corresponding neighbouring nodes
 class Graph:
+    #Constructor
     def __init__(self, graph_dict):          
-        self.graph = graph_dict
+        self._graph = graph_dict
 
-    #return a list of the graph' nodes
+    #Accessor
+    def _get_graph(self):
+        '''Method to be call when we want to access the attribute "graph"'''
+        return self._graph
+
+    #Property
+    graph = property(_get_graph)
+
+    #Method "__getattr__"
+    def __getattr__(self, attr):
+        '''If Python doesn't find the attribute "attr", it calls this method and print an alert'''
+        print("WARNING: There is no attribute {} here !".format(attr))
+
+    #Method "__delattr_"
+    def __delattr_(self, attr):
+        '''We can't delete an attribute, we raise the exception AttributeError'''
+        raise AttributeError("You can't delete attributes from this class")
+
+    #Method "add_node
+    def add_node(self, node):                   
+        '''Method to add the node 'node' to the graph if it's not already in the graph'''
+        if node not in self.graph:
+            self.graph[node] = []
+
+    #Method "add_edge"
+    def add_edge(self, edge): 
+        '''Method to add an 'edge' between a node and its neighbours'''        
+        (source_node, neighbour, overlap) = edge
+        #add an edge between the source_node and its neighbour node, with their corresponding overlap length
+        if source_node in self.graph:
+            self.graph[source_node].append([neighbour, overlap])                                                 
+        else:
+            self.graph[source_node] = [[neighbour, overlap]]
+
+    #Method "nodes"
     def nodes(self):
+        '''Method to return a list of the graph' nodes'''
         nodes = []    
         for node in self.graph.keys():
             nodes.append(node)                     
         return nodes
 
-    #return a list of the graph' edges, represented as a set, with one node (a loop back to the node) or two nodes and their overlapping length
-    def edges(self):                        
+    #Method "edges"
+    def edges(self):
+        '''Method to return a list of the graph' edges, represented as a set, with one node (a loop back to the node) or two nodes and their overlapping length'''
         edges = []
         for node in self.graph:
             for neighbour in self.graph[node]:
@@ -31,27 +68,14 @@ class Graph:
                     edges.append([node, neighbour[0], neighbour[1]])
         return edges
 
-    #create graph from the extension groups (e.g. reads sharing the same extension and overlapping with the source node)
-    '''NB: add only the first read for each extension group, e.g. the read having the larger overlap'''
+    #Method "create_graph_from_extensions"
     def create_graph_from_extensions(self, source_node, extGroup):
+        '''Method to create or update the graph from the extension groups (e.g. reads overlapping with the source node that share the same extension)'''
+        '''NB: add only the first read for each extension group, e.g. the read having the larger overlap'''
         self.add_node(source_node)
         for reads in extGroup.values():
             self.add_node(reads[0][0])
             self.add_edge((source_node, reads[0][0], len(source_node)-reads[0][1]))
-
-    #add the node 'node' to the graph if it's not already in the graph
-    def add_node(self, node):                   
-        if node not in self.graph:
-            self.graph[node] = []
-
-    #add an 'edge' between a node and its neighbours
-    def add_edge(self, edge):         
-        (source_node, neighbour, overlap) = edge
-        #add an edge between the source_node, its neighbour node and their overlap length
-        if source_node in self.graph:
-            self.graph[source_node].append([neighbour, overlap])                                                 
-        else:
-            self.graph[source_node] = [[neighbour, overlap]]
 
     #return all the paths from the start_node to the end_node
     def find_all_paths(self, start_node, end_node, path, all_paths):          
@@ -71,6 +95,10 @@ class Graph:
         for node in prev_nodes:
             self.find_all_paths(start_node, node, path+[node], all_paths)
         return all_paths
+
+    #Method "__repr__"
+    def __repr__(self):
+        return "Nodes graph: {}".format(self.graph)
 
 
 
@@ -93,10 +121,11 @@ def reverse_complement(S):
 #----------------------------------------------------
 '''
 To index a read by its seed:
-    - it takes as input the sequence of the read, its position in readList (list containing all reads' sequences) and the seedDict dictionary it will output
+    - it takes as input the sequence of the read, its position in readList (list containing all reads' sequences), the sequence of its reverse complement
+      and the seedDict dictionary it will output
     - it outputs a dictionary seedDict: key = seed's sequence ; value = list of positions of reads having this seed in readList
 '''
-def index_reads(read, i, seedDict):                
+def index_read(read, i, read_rc, seedDict):                
     #Index reads by their seed
     seed = read[:s]
     if seed in seedDict:
@@ -105,14 +134,11 @@ def index_reads(read, i, seedDict):
         seedDict[seed] = [str(i)]
 
     #Index reverse complement of reads by their seed as well
-    read_rc = reverse_complement(read)
     seed = read_rc[:s]
     if seed in seedDict:
         seedDict[seed].append("-"+str(i))
     else:
         seedDict[seed] = ["-"+str(i)]
-
-    return seedDict
 
 
 #----------------------------------------------------
@@ -120,15 +146,16 @@ def index_reads(read, i, seedDict):
 #----------------------------------------------------
 '''
 To find the reads overlapping with the current assembly S sequence
-    - it takes as input the current assembly's sequence (S), the read's sequence from which we want to extend and the seedDict dictionary
-    - it outputs an overlapping_reads list containing all the overlapping reads' sequences, along with the index of the beginning of the overlap, referenced as [read's sequence, index of beginning of overlap]
+    - it takes as input the current assembly's sequence (S), the length of the read from which we want to extend and the seedDict dictionary
+    - it outputs a list 'overlapping_reads' containing all the overlapping reads' sequences, along with the index of the beginning of the overlap, 
+      referenced as [read's sequence, index of beginning of overlap]
       (NB: list sorted automatically by smallest i, e.g. by larger overlap and so by smallest extension)
 '''
-def find_overlapping_reads(S, read, seedDict):
+def find_overlapping_reads(S, len_read, seedDict):
     overlapping_reads = []
 
     #Get the putative reads (e.g. reads having a seed onto the S sequence)
-    for i in range(len(S)-len(read)+1, len(S)-o_min-s):
+    for i in range(len(S)-len_read+1, len(S)-o_min-s):
         seed = S[i:i+s]
         if seed in seedDict:
             putative_reads = seedDict[seed]
@@ -173,9 +200,11 @@ def find_overlapping_reads(S, read, seedDict):
 #----------------------------------------------------
 '''
 To extend a read's sequence with overlapping reads
-    - it takes as input the current assembly's sequence (S), the read's sequence from which we want to extend, the abundance threshold value, the seedDict dictionary and the current graph to update
-    - it outputs the gapfilled sequence (S) if found/or the reason why the gapfilled failed, and a Boolean variable representing the success of the gapfilling
-extGroup = dictionary containing the extension's sequence as key, and the reads sharing this extension as value (value format: [read's sequence, index of beginning of overlap])
+    - it takes as input the current assembly's sequence (S), the read's sequence from which we want to extend, the abundance threshold value, 
+      the seedDict dictionary and the current graph to update
+    - it outputs the gap-filled sequence (S) if found / or the reason why the gap-filling failed, and a Boolean variable representing the success of the gapfilling
+extGroup = dictionary containing the extension's sequence as key, and the reads sharing this extension as value 
+(value format: [read's sequence, index of beginning of overlap])
 '''
 def extend(S, read, a, seedDict, graph):
     #Base cases
@@ -188,7 +217,7 @@ def extend(S, read, a, seedDict, graph):
         return "\nAbundance threshold value: {} \n|S| > max_length".format(a), False
 
     #Search for reads overlapping with the current assembly S sequence
-    overlapping_reads = find_overlapping_reads(S, read, seedDict)
+    overlapping_reads = find_overlapping_reads(S, len(read), seedDict)
     if len(overlapping_reads) == 0:
         return "\nAbundance threshold value: {} \nNo overlapping reads".format(a), False
 
@@ -238,7 +267,7 @@ def extend(S, read, a, seedDict, graph):
     for extension in extGroup:
         res, success = extend(S+extension, extGroup[extension][0][0], a, seedDict, graph)
         if success:
-            return res, True    
+            return res, True 
     return res, False
 
 
@@ -246,5 +275,5 @@ def extend(S, read, a, seedDict, graph):
 
 #TODO: check that if extension already in graph, do not gapfill again: actually, do gapfill again because the seq before ext could be different so not the same reads overlapping
 #TODO: do not gapfill again if search on same region as one previously done (same nodes with same window length)
-#TODO: use path to find all possible sequence (with only one stop in graph) ??
+#TODO: use path to find all possible sequences (with only one stop in graph) ??
 #TODO: add time for each step
