@@ -7,7 +7,7 @@ import subprocess
 import time
 from Bio import SeqIO
 from operator import itemgetter
-from helpers import Graph, reverse_complement, index_reads, extend
+from helpers import Graph, reverse_complement, index_read, extend
 from main import start, stop, input_seqName, s, o_min, list_of_a, max_length, readList, assembly_file
 
 #Augmenter la taille maximale de la pile de recursion en Python:
@@ -20,7 +20,8 @@ sys.setrecursionlimit(50000)
 '''
 readList = list of all reads' sequences
 seedDict = dictionary containing the seed's sequence as key, and the list of positions of reads having this seed in readList as value (-pos if revcomp of read)
-readWithStart = list of all reads containing the full sequence of the kmer start, along with the index of the beginning of the kmer start's subsequence, referenced as [position of the read in readList, index of beginning of kmer start's subsequence]
+readWithStart = list of all reads containing the full sequence of the kmer start, along with the index of the beginning of the kmer start's subsequence, 
+                referenced as a sublist of the readWithStart list: [position of the read in readList, index of beginning of kmer start's subsequence]
 '''
 try:
     startTime = time.time()
@@ -33,11 +34,13 @@ try:
         pos_read_in_readList = 0
 
         for read in readList:
+            #Get the reverse complement of the read
+            read_rc = reverse_complement(read)
+
             #Seed the read and update the dictionary of the seeds of the reads
-            index_reads(read, pos_read_in_readList, seedDict)
+            index_read(read, pos_read_in_readList, read_rc, seedDict)
 
             #Search if the read contains the whole kmer start's sequence and update the readWithStart list
-            read_rc = reverse_complement(read)
             if start in read:
                 readWithStart.append([str(pos_read_in_readList), read.index(start)])
             elif start in read_rc:
