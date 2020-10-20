@@ -4,8 +4,8 @@ import sys
 import re
 import subprocess
 import collections
+import olc
 from main import start, stop, s, o_min, max_length, readList
-from olc import seedDict
 
 
 #----------------------------------------------------
@@ -158,8 +158,8 @@ def find_overlapping_reads(S, len_read):
     #Get the putative reads (e.g. reads having a seed onto the S sequence)
     for i in range(len(S)-len_read+1, len(S)-o_min-s):
         seed = S[i:i+s]
-        if seed in seedDict:
-            putative_reads = seedDict[seed]
+        if seed in olc.seedDict:
+            putative_reads = olc.seedDict[seed]
 
             #For each putative read, search for an overlap between the S sequence and the putative read
             for put_read in putative_reads:
