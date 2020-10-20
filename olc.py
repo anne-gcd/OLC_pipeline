@@ -76,7 +76,7 @@ try:
             '''
 
             #Extend the assembly sequence
-            res, success = extend(read, len(read), a)
+            res, success = extend(read, len(read), a, seedDict)
             '''
             res, success = extend(read, read, a, seedDict, graph)
             '''
