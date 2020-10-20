@@ -4,7 +4,8 @@ import sys
 import re
 import subprocess
 import collections
-from main import start, stop, s, o_min, max_length, readList, seedDict
+from main import start, stop, s, o_min, max_length, readList
+from olc import seedDict
 
 
 #----------------------------------------------------
