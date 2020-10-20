@@ -4,7 +4,6 @@ import sys
 import re
 import subprocess
 import collections
-import olc
 from main import start, stop, s, o_min, max_length, readList
 
 
@@ -147,19 +146,19 @@ def index_read(read, i, read_rc, seedDict):
 #----------------------------------------------------
 '''
 To find the reads overlapping with the current assembly S sequence
-    - it takes as input the current assembly's sequence (S) and the length of the read from which we want to extend
+    - it takes as input the current assembly's sequence (S), the length of the read from which we want to extend and the seedDict dictionary
     - it outputs a list 'overlapping_reads' containing all the overlapping reads' sequences, along with the index of the beginning of the overlap, 
       referenced as [read's sequence, index of beginning of overlap]
       (NB: list sorted automatically by smallest i, e.g. by larger overlap and so by smallest extension)
 '''
-def find_overlapping_reads(S, len_read):
+def find_overlapping_reads(S, len_read, seedDict):
     overlapping_reads = []
 
     #Get the putative reads (e.g. reads having a seed onto the S sequence)
     for i in range(len(S)-len_read+1, len(S)-o_min-s):
         seed = S[i:i+s]
-        if seed in olc.seedDict:
-            putative_reads = olc.seedDict[seed]
+        if seed in seedDict:
+            putative_reads = seedDict[seed]
 
             #For each putative read, search for an overlap between the S sequence and the putative read
             for put_read in putative_reads:
@@ -201,7 +200,7 @@ def find_overlapping_reads(S, len_read):
 #----------------------------------------------------
 '''
 To extend a read's sequence with overlapping reads
-    - it takes as input the current assembly's sequence (S), the length of the read from which we want to extend and the abundance threshold value
+    - it takes as input the current assembly's sequence (S), the length of the read from which we want to extend, the abundance threshold value and the seedDict dictionary
     - it outputs the gap-filled sequence (S) if found / or the reason why the gap-filling failed, and a Boolean variable representing the success of the gapfilling
 extGroup = dictionary containing the extension's sequence as key, and the reads sharing this extension as value 
 (value format: [read's sequence, index of beginning of overlap])
@@ -209,7 +208,7 @@ extGroup = dictionary containing the extension's sequence as key, and the reads 
 '''
 def extend(S, read, a, seedDict, graph):
 '''
-def extend(S, len_read, a):
+def extend(S, len_read, a, seedDict):
     #Base cases
     if stop in S[-len_read:]:
         '''
@@ -222,7 +221,7 @@ def extend(S, len_read, a):
         return "\nAbundance threshold value: {} \n|S| > max_length".format(a), False
 
     #Search for reads overlapping with the current assembly S sequence
-    overlapping_reads = find_overlapping_reads(S, len_read)
+    overlapping_reads = find_overlapping_reads(S, len_read, seedDict)
     '''
     overlapping_reads = find_overlapping_reads(S, len(read), seedDict)
     '''
@@ -275,7 +274,7 @@ def extend(S, len_read, a):
 
     #Iterative extension of the assembly's sequence S
     for extension in extGroup:
-        res, success = extend(S+extension, len(extGroup[extension][0][0]), a)
+        res, success = extend(S+extension, len(extGroup[extension][0][0]), a, seedDict)
         '''
         res, success = extend(S+extension, extGroup[extension][0][0], a, seedDict, graph)
         '''
