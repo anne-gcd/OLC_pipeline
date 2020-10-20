@@ -4,7 +4,7 @@ import sys
 import re
 import subprocess
 import collections
-from main import start, stop, s, o_min, max_length, readList
+from main import start, stop, s, o_min, max_length, readList, seedDict
 
 
 #----------------------------------------------------
@@ -117,7 +117,7 @@ def reverse_complement(S):
 
 
 #----------------------------------------------------
-# index_reads function
+# index_read function
 #----------------------------------------------------
 '''
 To index a read by its seed:
@@ -146,12 +146,12 @@ def index_read(read, i, read_rc, seedDict):
 #----------------------------------------------------
 '''
 To find the reads overlapping with the current assembly S sequence
-    - it takes as input the current assembly's sequence (S), the length of the read from which we want to extend and the seedDict dictionary
+    - it takes as input the current assembly's sequence (S) and the length of the read from which we want to extend
     - it outputs a list 'overlapping_reads' containing all the overlapping reads' sequences, along with the index of the beginning of the overlap, 
       referenced as [read's sequence, index of beginning of overlap]
       (NB: list sorted automatically by smallest i, e.g. by larger overlap and so by smallest extension)
 '''
-def find_overlapping_reads(S, len_read, seedDict):
+def find_overlapping_reads(S, len_read):
     overlapping_reads = []
 
     #Get the putative reads (e.g. reads having a seed onto the S sequence)
@@ -200,24 +200,31 @@ def find_overlapping_reads(S, len_read, seedDict):
 #----------------------------------------------------
 '''
 To extend a read's sequence with overlapping reads
-    - it takes as input the current assembly's sequence (S), the read's sequence from which we want to extend, the abundance threshold value, 
-      the seedDict dictionary and the current graph to update
+    - it takes as input the current assembly's sequence (S), the length of the read from which we want to extend and the abundance threshold value
     - it outputs the gap-filled sequence (S) if found / or the reason why the gap-filling failed, and a Boolean variable representing the success of the gapfilling
 extGroup = dictionary containing the extension's sequence as key, and the reads sharing this extension as value 
 (value format: [read's sequence, index of beginning of overlap])
 '''
+'''
 def extend(S, read, a, seedDict, graph):
+'''
+def extend(S, len_read, a):
     #Base cases
-    if stop in S[-len(read):]:
+    if stop in S[-len_read:]:
+        '''
         graph.add_node(stop)
         graph.add_edge((read, stop, 0))
+        '''
         return S, True
 
     if len(S) > max_length:
         return "\nAbundance threshold value: {} \n|S| > max_length".format(a), False
 
     #Search for reads overlapping with the current assembly S sequence
+    overlapping_reads = find_overlapping_reads(S, len_read)
+    '''
     overlapping_reads = find_overlapping_reads(S, len(read), seedDict)
+    '''
     if len(overlapping_reads) == 0:
         return "\nAbundance threshold value: {} \nNo overlapping reads".format(a), False
 
@@ -261,11 +268,16 @@ def extend(S, read, a, seedDict, graph):
     extGroup = collections.OrderedDict(sorted(extGroup.items(), key=lambda t: len(t[0])))
 
     #Create graph "à la volée"
+    '''
     graph.create_graph_from_extensions(read, extGroup)
+    '''
 
     #Iterative extension of the assembly's sequence S
     for extension in extGroup:
+        res, success = extend(S+extension, len(extGroup[extension][0][0]), a)
+        '''
         res, success = extend(S+extension, extGroup[extension][0][0], a, seedDict, graph)
+        '''
         if success:
             return res, True 
     return res, False

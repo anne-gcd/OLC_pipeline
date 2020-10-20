@@ -55,9 +55,11 @@ try:
             sys.exit(1)
 
         #Create graph "à la volée"
+        '''
         nodes = {}
         graph = Graph(nodes)
         graph.add_node(start)
+        '''
 
         #Extend the reads containing the whole kmer start's sequence
         for (pos_read, index) in readWithStart:
@@ -68,11 +70,16 @@ try:
                 read = readList[int(pos_read)]
 
             #update the graph with this read
+            '''
             graph.add_node(read)
             graph.add_edge((start, read, 0))
-            
+            '''
+
             #Extend the assembly sequence
+            res, success = extend(read, len(read), a)
+            '''
             res, success = extend(read, read, a, seedDict, graph)
+            '''
             if not success:
                 print(res)
             if success:
