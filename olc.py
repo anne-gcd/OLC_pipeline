@@ -6,8 +6,9 @@ import re
 import subprocess
 import time
 from Bio import SeqIO
+from Bio.Seq import Seq
 from operator import itemgetter
-from helpers import Graph, reverse_complement, index_read, extend
+from helpers import Graph, index_read, extend
 from main import start, stop, input_seqName, s, o_min, list_of_a, max_length, readList, assembly_file
 
 #Augmenter la taille maximale de la pile de recursion en Python:
@@ -35,7 +36,7 @@ try:
 
         for read in readList:
             #Get the reverse complement of the read
-            read_rc = reverse_complement(read)
+            read_rc = str(Seq(read).reverse_complement())
 
             #Seed the read and update the dictionary of the seeds of the reads
             index_read(read, pos_read_in_readList, read_rc, seedDict)
@@ -65,7 +66,7 @@ try:
         for (pos_read, index) in readWithStart:
             #get the sequence of the read
             if '-' in str(pos_read):
-                read = reverse_complement(readList[int(pos_read.split('-')[1])])
+                read = str(Seq(readList[int(pos_read_in_readList('-')[1])]).reverse_complement())
             else:
                 read = readList[int(pos_read)]
 

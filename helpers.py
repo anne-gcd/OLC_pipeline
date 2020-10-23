@@ -4,6 +4,7 @@ import sys
 import re
 import subprocess
 import collections
+from Bio.Seq import Seq
 from main import start, stop, s, o_min, max_length, readList
 
 
@@ -104,19 +105,6 @@ class Graph:
 
 
 #----------------------------------------------------
-# reverse_complement function
-#----------------------------------------------------
-'''
-To reverse complement a sequence:
-    - it takes as input the sequence we want to reverse complement
-    - it outputs the reverse complement's sequence of the input sequence
-'''
-def reverse_complement(S):  
-    complement = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A', 'N': 'N'} 
-    return ''.join([complement[base] for base in S[::-1]])
-
-
-#----------------------------------------------------
 # index_read function
 #----------------------------------------------------
 '''
@@ -169,7 +157,7 @@ def find_overlapping_reads(S, len_read, seedDict):
 
                 #get the sequence of the read
                 if '-' in str(put_read):
-                    read = reverse_complement(readList[int(put_read.split('-')[1])])
+                    read = str(Seq(readList[int(put_read.split('-')[1])]).reverse_complement())
                 else:
                     read = readList[int(put_read)]
 
