@@ -66,7 +66,7 @@ try:
         for (pos_read, index) in readWithStart:
             #get the sequence of the read
             if '-' in str(pos_read):
-                read = str(Seq(readList[int(pos_read_in_readList('-')[1])]).reverse_complement())
+                read = str(Seq(readList[int(pos_read.split('-')[1])]).reverse_complement())
             else:
                 read = readList[int(pos_read)]
 
