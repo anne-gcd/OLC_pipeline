@@ -218,8 +218,8 @@ def extend(S, len_read, a, seedDict):
     '''
     if len(overlapping_reads) == 0:
         with open(tmp_solutions, "a") as tmp_file:
-            tmp_file.write("> No_read_overlapping")
-            tmp_file.write(str(S))
+            tmp_file.write(">No_read_overlapping")
+            tmp_file.write("\n"+str(S)+"\n")
         return "\nAbundance threshold value: {} \nNo overlapping reads".format(a), False
 
     #Group the overlapping reads by their extension
@@ -257,8 +257,8 @@ def extend(S, len_read, a, seedDict):
 
     if len(extGroup) == 0:
         with open(tmp_solutions, "a") as tmp_file:
-            tmp_file.write("> No_extGroup")
-            tmp_file.write(str(S))
+            tmp_file.write(">No_extGroup")
+            tmp_file.write("\n"+str(S)+"\n")
         return "\nAbundance threshold value: {} \nNo extension".format(a), False
 
     #Sort extGroup by the maximum overlap (e.g. by the minimal extension)
