@@ -4,6 +4,7 @@ import sys
 import re
 import subprocess
 import collections
+import pickle
 from Bio.Seq import Seq
 from main import start, stop, s, o_min, max_length, readList
 
@@ -197,6 +198,8 @@ extGroup = dictionary containing the extension's sequence as key, and the reads 
 def extend(S, read, a, seedDict, graph):
 '''
 def extend(S, len_read, a, seedDict):
+    tmp_solutions = os.getcwd + "/tmp_solutions.txt"
+
     #Base cases
     if stop in S[-len_read:]:
         '''
@@ -214,6 +217,9 @@ def extend(S, len_read, a, seedDict):
     overlapping_reads = find_overlapping_reads(S, len(read), seedDict)
     '''
     if len(overlapping_reads) == 0:
+        with open(tmp_solutions, "a") as tmp_file:
+            tmp_file.write("> No_read_overlapping")
+            tmp_file.write(str(S))
         return "\nAbundance threshold value: {} \nNo overlapping reads".format(a), False
 
     #Group the overlapping reads by their extension
@@ -250,6 +256,9 @@ def extend(S, len_read, a, seedDict):
             del extGroup[extension]
 
     if len(extGroup) == 0:
+        with open(tmp_solutions, "a") as tmp_file:
+            tmp_file.write("> No_extGroup")
+            tmp_file.write(str(S))
         return "\nAbundance threshold value: {} \nNo extension".format(a), False
 
     #Sort extGroup by the maximum overlap (e.g. by the minimal extension)
