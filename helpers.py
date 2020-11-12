@@ -198,7 +198,7 @@ extGroup = dictionary containing the extension's sequence as key, and the reads 
 def extend(S, read, a, seedDict, graph):
 '''
 def extend(S, len_read, a, seedDict):
-    tmp_solutions = os.getcwd + "/tmp_solutions.txt"
+    tmp_solutions = str(os.getcwd) + "/tmp_solutions.txt"
 
     #Base cases
     if stop in S[-len_read:]:
