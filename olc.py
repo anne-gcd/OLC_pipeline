@@ -83,6 +83,8 @@ try:
             '''
             if not success:
                 print(res)
+                solution = False
+                
             if success:
                 print("\nAbundance threshold value: {} \nSuccessful Gapfilling !".format(a))
                 #Save the gapfilled sequence in the output_file
@@ -93,7 +95,12 @@ try:
                     seq_name = "assembly." + input_seqName + "_a" + str(a) + " len " + str(len(seq))
                     assemblyFile.write(">" + seq_name)
                     assemblyFile.write("\n" + seq + "\n")
+                    solution = True
                 break
+
+        #Iterate over the values of abundance_min ONLY if no solution is found
+        if solution == True:
+            break
 
     endTime = time.time()
     print("It took %f seconds" %(endTime-startTime))
