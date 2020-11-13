@@ -1,10 +1,14 @@
+"""Module 'main.py': initialization of the script OLC
+
+The module 'main.py' enables to get the input parameters and creates the file and directory in which to save the results.
+It creates as well the list 'readList' containing all reads' sequences.
+"""
 #!/usr/bin/env python3
 from __future__ import print_function
 import argparse
 import os
 import re
 import sys
-import time
 from Bio import SeqIO
 
 
@@ -66,7 +70,7 @@ if not os.path.exists(args.outdir):
     os.mkdir(args.outdir)
 try:
     os.chdir(args.outdir)
-except:
+except OSError:
     print("Something wrong with specified directory. Exception-", sys.exc_info())
     print("Restoring the path.")
     os.chdir(cwd)
