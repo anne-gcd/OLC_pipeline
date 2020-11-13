@@ -1,6 +1,11 @@
 """Module 'olc.py': development of the script OLC
 
 The module 'olc.py' contains the pipeline of the gap-filling using an OLC method.
+Three main variables are used in this pipeline:
+- readList = list of all reads' sequences
+- seedDict = dictionary containing the seed's sequence as key, and the list of positions (i) of reads having this seed in readList as value (-pos if revcomp of read)
+- readWithStart = list of all reads containing the full sequence of the kmer start, along with the index of the beginning of the kmer start's subsequence,
+                referenced as a sublist of the readWithStart list: [position of the read in readList, index of beginning of kmer start's subsequence]
 """
 #!/usr/bin/env python3
 from __future__ import print_function
@@ -10,9 +15,6 @@ from operator import itemgetter
 from Bio.Seq import Seq
 from main import START, STOP, input_seqName, list_of_abundance_min, readList, assembly_file
 from helpers import index_read, extend
-'''
-from helpers import Graph, index_read, extend
-'''
 
 # Increase the maximum recursion depth in Python.
 sys.setrecursionlimit(50000)
@@ -21,13 +23,6 @@ sys.setrecursionlimit(50000)
 #----------------------------------------------------
 # Gapfilling with Seed-and-Extend approach
 #----------------------------------------------------
-"""Three main variables are used in this pipeline:
-
-readList = list of all reads' sequences
-seedDict = dictionary containing the seed's sequence as key, and the list of positions (i) of reads having this seed in readList as value (-pos if revcomp of read)
-readWithStart = list of all reads containing the full sequence of the kmer start, along with the index of the beginning of the kmer start's subsequence,
-                referenced as a sublist of the readWithStart list: [position of the read in readList, index of beginning of kmer start's subsequence]
-"""
 try:
     # Initiate the three main variables.
     seedDict = {}
@@ -55,13 +50,6 @@ try:
         print("\nNo read in the dataset provided contains the kmer start... \nHence, tentative of gapfilling aborted...")
         sys.exit(1)
 
-    # Create graph "a la volee".
-        '''
-        nodes = {}
-        graph = Graph(nodes)
-        graph.add_node(start)
-        '''
-
     # Extend the reads containing the whole kmer start's sequence.
     for (pos_read, index) in readWithStart:
 
@@ -71,41 +59,31 @@ try:
         else:
             read = readList[int(pos_read)]
 
-        # Update the graph with this read.
-        '''
-        graph.add_node(read)
-        graph.add_edge((start, read, 0))
-        '''
-
         # Extend the assembly sequence (e.g. the current read containing the whole kmer start's sequence) using the function 'extend()'
         for abundance_min in list_of_abundance_min:
             res, success = extend(read, len(read), abundance_min, seedDict)
-            '''
-            res, success = extend(read, len(read), abundance_min, seedDict, graph)
-            '''
-        # Case of unsuccessful gap-filling.
-        if not success:
-            print(res)
-            solution = False
-        # Case of successful gap-filling.
-        if success:
-            print("\nSuccessful Gapfilling !")
-            # Save the gap-filled sequence in the output_file.
-            with open(assembly_file, "a") as assemblyFile:
-                assembly_startbeg = res.index(START)
-                assembly_stopbeg = res.index(STOP)
-                seq = res[assembly_startbeg:assembly_stopbeg+len(STOP)]
-                seq_name = "assembly." + input_seqName + "_a" + str(abundance_min) + " len " + str(len(seq))
-                assemblyFile.write(">" + seq_name)
-                assemblyFile.write("\n" + seq + "\n")
-                solution = True
-            # Iterate over the values of abundance_min only if no solution is found.
-            break
+
+            # Case of unsuccessful gap-filling.
+            if not success:
+                print(res)
+            # Case of successful gap-filling.
+            if success:
+                print("\nSuccessful Gapfilling !")
+                # Save the gap-filled sequence in the output_file.
+                with open(assembly_file, "a") as assemblyFile:
+                    assembly_startbeg = res.index(START)
+                    assembly_stopbeg = res.index(STOP)
+                    seq = res[assembly_startbeg:assembly_stopbeg+len(STOP)]
+                    seq_name = "assembly." + input_seqName + "_a" + str(abundance_min) + " len " + str(len(seq))
+                    assemblyFile.write(">" + seq_name)
+                    assemblyFile.write("\n" + seq + "\n")
+                # Iterate over the values of abundance_min only if no solution is found.
+                break
 
 
-except Exception as e:
+except Exception as exc:
     print("\nException-")
-    print(e)
+    print(exc)
     exc_type, exc_obj, exc_tb = sys.exc_info()
     fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
     print(exc_type, fname, exc_tb.tb_lineno)
