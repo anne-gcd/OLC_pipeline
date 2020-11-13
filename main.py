@@ -53,10 +53,10 @@ print("Reads' file: " + reads_file)
 with open(input_file, "r") as inputFile:
     for record in SeqIO.parse(inputFile, "fasta"):
         if record.id == "start" or "left" in record.description:
-            start = str(record.seq)
+            START = str(record.seq)
             input_seqName = record.id
         if record.id == "stop" or "right" in record.description:
-            stop = str(record.seq)
+            STOP = str(record.seq)
             if record.id != input_seqName:
                 input_seqName += "-" + record.id
 
