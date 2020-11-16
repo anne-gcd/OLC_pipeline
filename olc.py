@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """Module 'olc.py': development of the script OLC
 
 The module 'olc.py' contains the pipeline of the gap-filling using an OLC method.
@@ -7,7 +8,7 @@ Three main variables are used in this pipeline:
 - readWithStart = list of all reads containing the full sequence of the kmer start, along with the index of the beginning of the kmer start's subsequence,
                 referenced as a sublist of the readWithStart list: [position of the read in readList, index of beginning of kmer start's subsequence]
 """
-#!/usr/bin/env python3
+
 from __future__ import print_function
 import os
 import sys

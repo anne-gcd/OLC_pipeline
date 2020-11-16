@@ -1,8 +1,9 @@
+#!/usr/bin/env python3
 """Module 'helpers.py': classes and functions of the script OLC
 
 The module 'helpers.py' contains the classes and functions used in the script OLC.
 """
-#!/usr/bin/env python3
+
 import collections
 from Bio.Seq import Seq
 from main import STOP, seed_size, min_overlap, list_of_abundance_min, max_length, readList
