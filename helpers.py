@@ -5,7 +5,7 @@ The module 'helpers.py' contains the classes and functions used in the script OL
 #!/usr/bin/env python3
 import collections
 from Bio.Seq import Seq
-from main import STOP, seed_size, min_overlap, max_length, readList
+from main import STOP, seed_size, min_overlap, list_of_abundance_min, max_length, readList
 
 
 #----------------------------------------------------
@@ -148,13 +148,13 @@ def index_read(read, i, read_rc, seedDict):
 #----------------------------------------------------
 # find_overlapping_reads function
 #----------------------------------------------------
-def find_overlapping_reads(S, len_read, seedDict):
+def find_overlapping_reads(assembly, len_read, seedDict):
     """
     To find the reads overlapping with the current assembly's sequence S
     The list 'overlapping_reads' it returns is sorted automatically by smallest i, e.g. by larger overlap and so by smallest extension
 
     Args:
-        - S: str
+        - assembly: str
             current assembly's sequence
         - len_read: int
             length of the read from which we want to extend
@@ -168,13 +168,13 @@ def find_overlapping_reads(S, len_read, seedDict):
     """
     overlapping_reads = []
 
-    # Get the putative reads (e.g. reads having a seed onto the S sequence).
-    for i in range(len(S)-len_read+1, len(S)-min_overlap-seed_size):
-        seed = S[i:i+seed_size]
+    # Get the putative reads (e.g. reads having a seed onto the current assembly's sequence).
+    for i in range(len(assembly)-len_read+1, len(assembly)-min_overlap-seed_size):
+        seed = assembly[i:i+seed_size]
         if seed in seedDict:
             putative_reads = seedDict[seed]
 
-            # For each putative read, search for an overlap between the S sequence and the putative read.
+            # For each putative read, search for an overlap between the current assembly's sequence and the putative read.
             for put_read in putative_reads:
                 nb_substitutions = 0
                 l = i + seed_size
@@ -187,9 +187,9 @@ def find_overlapping_reads(S, len_read, seedDict):
                 else:
                     read = readList[int(put_read)]
 
-                while l < len(S) and j < len(read):
+                while l < len(assembly) and j < len(read):
                     # Match.
-                    if S[l] == read[j]:
+                    if assembly[l] == read[j]:
                         l += 1
                         j += 1
                         length_overlap += 1
@@ -203,7 +203,7 @@ def find_overlapping_reads(S, len_read, seedDict):
                         break
 
                 # Overlap found.
-                if l == len(S):
+                if l == len(assembly):
                     overlapping_reads.append([read, i])
 
     return overlapping_reads
@@ -212,7 +212,7 @@ def find_overlapping_reads(S, len_read, seedDict):
 #----------------------------------------------------
 # extend function
 #----------------------------------------------------
-def extend(S, len_read, a, seedDict):
+def extend(assembly, len_read, seedDict):
     """
     To extend a read's sequence with overlapping reads
     The Boolean value it returns represents the success of the gap-filling
@@ -221,51 +221,49 @@ def extend(S, len_read, a, seedDict):
     If we use the 'graph' module: def extend(S, read, a, seedDict, graph):
 
     Args:
-        - S: str
+        - assembly: str
             current assembly's sequence
         - len_read: int
             length of the read from which we want to extend
-        - a: int
-            abundance threshold value (e.g. number minimal of reads sharing an extension)
         - seedDict: dict
             dictionary of reads indexed by their seed: key = seed's sequence ; value = list of positions of reads having this seed in readList
 
     Returns:
         str, Boolean
-            - the gap-filled sequence (S) and a Boolean variable equal to True if a solution is found (e.g. we arrived to STOP kmer)
+            - the gap-filled sequence (assembly) and a Boolean variable equal to True if a solution is found (e.g. we arrived to STOP kmer)
             OR
-            - the current assembly's sequence updated and a Boolean variable equal to False if no solution is found but we extended a little bit S
-              (e.g. we didn't arrive to STOP kmer)
+            - the current assembly's sequence updated and a Boolean variable equal to False if no solution is found but we extended a little bit the 
+              current assembly's sequence (e.g. we didn't arrive to STOP kmer)
             OR
-            - the reason why the gap-filling failed and a Boolean variable equal to False if no solution is found and we didn't extended S
+            - the reason why the gap-filling failed and a Boolean variable equal to False if no solution is found and we didn't extended the current assembly's sequence
     """
     tmp_solutions = "tmp_solutions.txt"
 
     # Base cases.
-    if STOP in S[-len_read:]:
+    if STOP in assembly[-len_read:]:
         '''
         graph.add_node(stop)
         graph.add_edge((read, stop, 0))
         '''
-        return S, True
+        return assembly, True
 
-    if len(S) > max_length:
-        return "\nAbundance threshold value: {} \n|S| > max_length".format(a), False
+    if len(assembly) > max_length:
+        return "\n|S| > max_length", False
 
-    # Search for reads overlapping with the current assembly S sequence.
-    overlapping_reads = find_overlapping_reads(S, len_read, seedDict)
+    # Search for reads overlapping with the current assembly's sequence.
+    overlapping_reads = find_overlapping_reads(assembly, len_read, seedDict)
     if not overlapping_reads:
         with open(tmp_solutions, "a") as tmp_file:
             tmp_file.write(">No_read_overlapping")
-            tmp_file.write("\n"+str(S)+"\n")
-        return "\nAbundance threshold value: {} \nNo overlapping reads".format(a), False
+            tmp_file.write("\n"+str(assembly)+"\n")
+        return "\nNo overlapping reads", False
 
     # Group the overlapping reads by their extension.
     extGroup = {}
 
     # Add the smallest extension to extGroup.
     i = overlapping_reads[0][1]
-    min_ext = overlapping_reads[0][0][len(S)-i:]
+    min_ext = overlapping_reads[0][0][len(assembly)-i:]
     extGroup[min_ext] = [overlapping_reads[0]]
 
     # Populate extGroup.
@@ -273,34 +271,43 @@ def extend(S, len_read, a, seedDict):
     added_to_extGroup = True
     for (read_seq, index) in overlapping_reads[1:]:
         if len(extGroup) == 1:
-            if read_seq[len(S)-index:len(S)-index+len(min_ext)] == min_ext:
+            if read_seq[len(assembly)-index:len(assembly)-index+len(min_ext)] == min_ext:
                 extGroup[min_ext].append([read_seq, index])
             else:
-                extGroup[read_seq[len(S)-index:]] = [[read_seq, index]]
+                extGroup[read_seq[len(assembly)-index:]] = [[read_seq, index]]
         elif len(extGroup) > 1:
             for extension in extGroup:
-                if read_seq[len(S)-index:len(S)-index+len(extension)] == extension:
+                if read_seq[len(assembly)-index:len(assembly)-index+len(extension)] == extension:
                     extGroup[extension].append([read_seq, index])
                     added_to_extGroup = True
                     break
                 else:
                     added_to_extGroup = False
             if not added_to_extGroup:
-                extGroup[read_seq[len(S)-index:]] = [[read_seq, index]]
+                extGroup[read_seq[len(assembly)-index:]] = [[read_seq, index]]
 
-    # Filter extGroup by the number of reads sharing an extension (argument '-a').
-    for extension in list(extGroup.keys()):
-        if len(extGroup[extension]) < a:
-            del extGroup[extension]
+    # Filter extGroup by the number of reads sharing an extension (argument 'abundance_min').
+    for abundance_min in list_of_abundance_min:
+        extGroup_filtered = extGroup.copy()
+        for extension in list(extGroup_filtered.keys()):
+            if len(extGroup_filtered[extension]) < abundance_min:
+                del extGroup_filtered[extension]
+        
+        # Iterate over the values of abundance_min only if number of reads sharing an extension < 'abundance_min'.
+        if not extGroup_filtered:
+            continue
+        else:
+            break
 
-    if not extGroup:
+    # If number of reads sharing an extension < minimal 'abundance_min' provided, stop the extension.
+    if not extGroup_filtered:
         with open(tmp_solutions, "a") as tmp_file:
             tmp_file.write(">No_extGroup")
-            tmp_file.write("\n"+str(S)+"\n")
-        return "\nAbundance threshold value: {} \nNo extension".format(a), False
+            tmp_file.write("\n"+str(assembly)+"\n")
+        return "\nNo extension", False
 
     # Sort extGroup by the maximum overlap (e.g. by the minimal extension).
-    extGroup = collections.OrderedDict(sorted(extGroup.items(), key=lambda t: len(t[0])))
+    extGroup_filtered = collections.OrderedDict(sorted(extGroup_filtered.items(), key=lambda t: len(t[0])))
 
     # Create graph "a la volee".
     '''
@@ -308,10 +315,10 @@ def extend(S, len_read, a, seedDict):
     '''
 
     # Iterative extension of the assembly's sequence S.
-    for extension in extGroup:
-        res, success = extend(S+extension, len(extGroup[extension][0][0]), a, seedDict)
+    for extension in extGroup_filtered:
+        res, success = extend(assembly+extension, len(extGroup_filtered[extension][0][0]), seedDict)
         '''
-        res, success = extend(S+extension, extGroup[extension][0][0], a, seedDict, graph)
+        res, success = extend(assembly+extension, extGroup_filtered[extension][0][0], seedDict, graph)
         '''
         if success:
             return res, True

@@ -13,7 +13,7 @@ import os
 import sys
 from operator import itemgetter
 from Bio.Seq import Seq
-from main import START, STOP, input_seqName, list_of_abundance_min, readList, assembly_file
+from main import START, STOP, input_seqName, readList, assembly_file
 from helpers import index_read, extend
 
 # Increase the maximum recursion depth in Python.
@@ -60,25 +60,22 @@ try:
             read = readList[int(pos_read)]
 
         # Extend the assembly sequence (e.g. the current read containing the whole kmer start's sequence) using the function 'extend()'
-        for abundance_min in list_of_abundance_min:
-            res, success = extend(read, len(read), abundance_min, seedDict)
+        res, success = extend(read, len(read), seedDict)
 
-            # Case of unsuccessful gap-filling.
-            if not success:
-                print(res)
-            # Case of successful gap-filling.
-            if success:
-                print("\nSuccessful Gapfilling !")
-                # Save the gap-filled sequence in the output_file.
-                with open(assembly_file, "a") as assemblyFile:
-                    assembly_startbeg = res.index(START)
-                    assembly_stopbeg = res.index(STOP)
-                    seq = res[assembly_startbeg:assembly_stopbeg+len(STOP)]
-                    seq_name = "assembly." + input_seqName + "_a" + str(abundance_min) + " len " + str(len(seq))
-                    assemblyFile.write(">" + seq_name)
-                    assemblyFile.write("\n" + seq + "\n")
-                # Iterate over the values of abundance_min only if no solution is found.
-                break
+        # Case of unsuccessful gap-filling.
+        if not success:
+            print(res)
+        # Case of successful gap-filling.
+        if success:
+            print("\nSuccessful Gapfilling !")
+            # Save the gap-filled sequence in the output_file.
+            with open(assembly_file, "a") as assemblyFile:
+                assembly_startbeg = res.index(START)
+                assembly_stopbeg = res.index(STOP)
+                seq = res[assembly_startbeg:assembly_stopbeg+len(STOP)]
+                seq_name = "assembly." + input_seqName + " len " + str(len(seq))
+                assemblyFile.write(">" + seq_name)
+                assemblyFile.write("\n" + seq + "\n")
 
 
 except Exception as exc:
