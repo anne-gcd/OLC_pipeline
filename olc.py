@@ -77,6 +77,7 @@ try:
                 seq_name = "assembly." + input_seqName + " len " + str(len(seq))
                 assemblyFile.write(">" + seq_name)
                 assemblyFile.write("\n" + seq + "\n")
+            break
 
 
 except Exception as exc:
