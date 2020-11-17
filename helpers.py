@@ -238,7 +238,7 @@ def extend(assembly, len_read, seedDict):
             OR
             - the reason why the gap-filling failed and a Boolean variable equal to False if no solution is found and we didn't extended the current assembly's sequence
     """
-    tmp_solutions = "tmp_solutions.txt"
+    tmp_solutions = "tmp_solutions.fasta"
 
     # Base cases.
     if STOP in assembly[-len_read:]:
