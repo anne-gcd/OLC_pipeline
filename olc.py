@@ -74,7 +74,7 @@ try:
                 assembly_startbeg = res.index(START)
                 assembly_stopbeg = res.index(STOP)
                 seq = res[assembly_startbeg:assembly_stopbeg+len(STOP)]
-                seq_name = "assembly." + input_seqName + " len " + str(len(seq))
+                seq_name = "assembly." + input_seqName + " len_" + str(len(seq))
                 assemblyFile.write(">" + seq_name)
                 assemblyFile.write("\n" + seq + "\n")
             break
