@@ -307,8 +307,8 @@ def extend(assembly, len_read, seedDict):
             tmp_file.write("\n"+str(assembly)+"\n")
         return "\nNo extension", False
 
-    # Sort extGroup by the maximum overlap (e.g. by the minimal extension).
-    extGroup_filtered = collections.OrderedDict(sorted(extGroup_filtered.items(), key=lambda t: len(t[0])))
+    # Sort extGroup by the number of reads sharing an extension, with the extension shared by the most of reads first.
+    extGroup_filtered = collections.OrderedDict(sorted(extGroup_filtered.items(), key=lambda t: len(t[1])))
 
     # Create graph "a la volee".
     '''
