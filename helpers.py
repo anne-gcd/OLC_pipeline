@@ -152,7 +152,7 @@ def index_read(read, i, read_rc, seedDict):
 def find_overlapping_reads(assembly, len_read, seedDict):
     """
     To find the reads overlapping with the current assembly's sequence S
-    The list 'overlapping_reads' it returns is sorted automatically by smallest i, e.g. by larger overlap and so by smallest extension
+    The list 'overlapping_reads' it returns is sorted automatically by smallest i, e.g. by largest overlap
 
     Args:
         - assembly: str
@@ -262,30 +262,46 @@ def extend(assembly, len_read, seedDict):
     # Group the overlapping reads by their extension.
     extGroup = {}
 
-    # Add the smallest extension to extGroup.
-    i = overlapping_reads[0][1]
-    min_ext = overlapping_reads[0][0][len(assembly)-i:]
-    extGroup[min_ext] = [overlapping_reads[0]]
-
     # Populate extGroup.
-    '''NB: overlapping_reads list sorted automatically by smallest extension'''
-    added_to_extGroup = True
-    for (read_seq, index) in overlapping_reads[1:]:
-        if len(extGroup) == 1:
-            if read_seq[len(assembly)-index:len(assembly)-index+len(min_ext)] == min_ext:
-                extGroup[min_ext].append([read_seq, index])
-            else:
-                extGroup[read_seq[len(assembly)-index:]] = [[read_seq, index]]
-        elif len(extGroup) > 1:
+    '''NB: overlapping_reads list sorted automatically by smallest i, e.g. by largest overlap'''
+    for (read_seq, index) in overlapping_reads:
+
+        # Add first extension to extGroup.
+        if len(extGroup) == 0:
+            extGroup[read_seq[len(assembly)-index:]] = [[read_seq, index]]
+
+        # Add all extensions to extGroup.
+        elif len(extGroup) > 0:
             for extension in extGroup:
-                if read_seq[len(assembly)-index:len(assembly)-index+len(extension)] == extension:
-                    extGroup[extension].append([read_seq, index])
-                    added_to_extGroup = True
-                    break
+                # Check that current extension is smaller than the one(s) in extGroup.
+                if len(read_seq[len(assembly)-index:]) < len(extension):
+                    # Current extension already in extGroup.
+                    if read_seq[len(assembly)-index:] == extension[:len(read_seq[len(assembly)-index:])]:
+                        new_extension = read_seq[len(assembly)-index:]
+                        extGroup[new_extension] = extGroup[extension]
+                        extGroup[new_extension].append([read_seq, index])
+                        del extGroup[extension]
+                        added_to_extGroup = True
+                        break
+                    # Current extension not already in extGroup.
+                    else:
+                        added_to_extGroup = False
+                # Current extension is not smaller than the one(s) in extGroup.
                 else:
-                    added_to_extGroup = False
+                    # Current extension already in extGroup.
+                    if read_seq[len(assembly)-index:len(assembly)-index+len(extension)] == extension:
+                        extGroup[extension].append([read_seq, index])
+                        added_to_extGroup = True
+                        break
+                    # Current extension not already in extGroup.
+                    else:
+                        added_to_extGroup = False
+            # Current extension not already in extGroup.
             if not added_to_extGroup:
                 extGroup[read_seq[len(assembly)-index:]] = [[read_seq, index]]
+
+        # Sort extGroup by the smallest extension.
+        extGroup = collections.OrderedDict(sorted(extGroup.items(), key=lambda t: len(t[0])))
 
     # Filter extGroup by the number of reads sharing an extension (argument 'abundance_min').
     for abundance_min in list_of_abundance_min:
@@ -307,8 +323,9 @@ def extend(assembly, len_read, seedDict):
             tmp_file.write("\n"+str(assembly)+"\n")
         return "\nNo extension", False
 
-    # Sort extGroup by the number of reads sharing an extension, with the extension shared by the most of reads first.
-    extGroup_filtered = collections.OrderedDict(sorted(extGroup_filtered.items(), key=lambda t: len(t[1])))
+    # Sort extGroup by the extension whose read has the largest overlap with the current assembly's sequence (smallest i). 
+    '''NB: values of extGroup sorted by reads having the larger overlap'''
+    extGroup_filtered = collections.OrderedDict(sorted(extGroup_filtered.items(), key=lambda  t: t[1][0][1]))
 
     # Create graph "a la volee".
     '''
