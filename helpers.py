@@ -266,6 +266,10 @@ def extend(assembly, len_read, seedDict):
     '''NB: overlapping_reads list sorted automatically by smallest i, e.g. by largest overlap'''
     for (read_seq, index) in overlapping_reads:
 
+        # If no extension, don't add it to extGroup.
+        if read_seq[len(assembly)-index:] == "":
+            continue
+
         # Add first extension to extGroup.
         if len(extGroup) == 0:
             extGroup[read_seq[len(assembly)-index:]] = [[read_seq, index]]
