@@ -6,7 +6,7 @@ The module 'helpers.py' contains the classes and functions used in the script OL
 
 import collections
 from Bio.Seq import Seq
-from main import STOP, seed_size, min_overlap, list_of_abundance_min, max_length, readList
+from main import STOP, seed_size, min_overlap, list_of_abundance_min, max_length, max_subs, readList
 
 
 #----------------------------------------------------
@@ -194,8 +194,8 @@ def find_overlapping_reads(assembly, len_read, seedDict):
                         l += 1
                         j += 1
                         length_overlap += 1
-                    # Mismatch (error in reads: we allow 2 substitutions maximum).
-                    elif nb_substitutions < 2:
+                    # Mismatch (error in reads: we allow [max_subs] substitutions maximum).
+                    elif nb_substitutions < max_subs:
                         l += 1
                         j += 1
                         length_overlap += 1

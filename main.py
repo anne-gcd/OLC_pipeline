@@ -26,6 +26,7 @@ parser.add_argument('-s', action="store", dest="seed_size", type=int, help="Seed
 parser.add_argument('-o', action="store", dest="min_overlap", type=int, help="Minimum overlapping size (bp)", required=True)
 parser.add_argument('-a', action="store", dest="abundance_min", nargs='*', type=int, default=2, help="Minimal abundance(s) of reads used for gapfilling ; extension's groups having less than this number of reads are discarded from the graph")
 parser.add_argument('-l', action="store", dest="max_length", type=int, help="Maximum assembly length (bp) (it could correspond to the length of the gap to fill (+length input sequences) OR it could be a very high length to prevent for searching indefinitely", required=True)
+parser.add_argument('-subs', action="store", dest="max_subs", type=int, default=2, help="Maximum number of substitutions allowed in the inexact overlap between reads")
 parser.add_argument('-out', action="store", dest="outdir", default="./olc_results", help="Output directory for the results' files")
 
 args = parser.parse_args()
@@ -85,6 +86,7 @@ seed_size = args.seed_size
 min_overlap = args.min_overlap
 list_of_abundance_min = args.abundance_min
 max_length = args.max_length
+max_subs = args.max_subs
 
 #----------------------------------------------------
 # Output file for saving results
