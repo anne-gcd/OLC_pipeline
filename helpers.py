@@ -6,7 +6,7 @@ The module 'helpers.py' contains the classes and functions used in the script OL
 
 import collections
 from Bio.Seq import Seq
-from main import STOP, seed_size, min_overlap, list_of_abundance_min, max_length, max_subs, readList
+from main import STOP, input_seqName, seed_size, min_overlap, list_of_abundance_min, max_length, max_subs, readList
 
 
 #----------------------------------------------------
@@ -255,7 +255,7 @@ def extend(assembly, len_read, seedDict):
     overlapping_reads = find_overlapping_reads(assembly, len_read, seedDict)
     if not overlapping_reads:
         with open(tmp_solutions, "a") as tmp_file:
-            tmp_file.write(">No_read_overlapping")
+            tmp_file.write(">" + input_seqName + " _ No_read_overlapping")
             tmp_file.write("\n"+str(assembly)+"\n")
         return "\nNo overlapping reads", False
 
@@ -323,7 +323,7 @@ def extend(assembly, len_read, seedDict):
     # If number of reads sharing an extension < minimal 'abundance_min' provided, stop the extension.
     if not extGroup_filtered:
         with open(tmp_solutions, "a") as tmp_file:
-            tmp_file.write(">No_extGroup")
+            tmp_file.write(">" + input_seqName + " _ No_extGroup")
             tmp_file.write("\n"+str(assembly)+"\n")
         return "\nNo extension", False
 
