@@ -288,6 +288,20 @@ def extend(assembly, len_read, seedDict):
                         del extGroup[extension]
                         added_to_extGroup = True
                         break
+                    # Current extension is partially in extGroup.
+                    elif read_seq[len(assembly)-index] == extension[0]:
+                        i = 1
+                        while i < len(read_seq[len(assembly)-index:]):
+                            if read_seq[len(assembly)-index+i] == extension[i]:
+                                i += 1
+                            else:
+                                break
+                        new_extension = extension[:i]
+                        extGroup[new_extension] = extGroup[extension]
+                        extGroup[new_extension].append([read_seq, index])
+                        del extGroup[extension]
+                        added_to_extGroup = True
+                        break
                     # Current extension not already in extGroup.
                     else:
                         added_to_extGroup = False
@@ -297,6 +311,20 @@ def extend(assembly, len_read, seedDict):
                     # Current extension already in extGroup.
                     if read_seq[len(assembly)-index:len(assembly)-index+len(extension)] == extension:
                         extGroup[extension].append([read_seq, index])
+                        added_to_extGroup = True
+                        break
+                    # Current extension is partially in extGroup.
+                    elif read_seq[len(assembly)-index] == extension[0]:
+                        i = 1
+                        while i < len(extension):
+                            if read_seq[len(assembly)-index+i] == extension[i]:
+                                i += 1
+                            else:
+                                break
+                        new_extension = extension[:i]
+                        extGroup[new_extension] = extGroup[extension]
+                        extGroup[new_extension].append([read_seq, index])
+                        del extGroup[extension]
                         added_to_extGroup = True
                         break
                     # Current extension not already in extGroup.
