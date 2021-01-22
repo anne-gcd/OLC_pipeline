@@ -263,7 +263,7 @@ def gapfilling(current_gap):
     output_file = "{}.g{}.c{}.s{}.o{}.olc_gapfilling.fasta".format(str(gap_label), gap.length, args.chunk, seed_size, min_overlap)
 
     #Perform the gap-filling with OLC
-    olc_command = "/home/genouest/inra_umr1349/aguichard/Gapfilling/OLC/scripts/OLC_pipeline/olc.py -in " + input_file + " -reads " + input_reads_file + " -s " + str(seed_size) + " -o " + str(min_overlap) + " -a " + str_of_abundance_min + " -l " + str(max_length) + " -subs " + str(max_subs) + " -out " + olc_outDir + " -assembly " + output_file
+    olc_command = str(sys.path[0]) + "/olc.py -in " + input_file + " -reads " + input_reads_file + " -s " + str(seed_size) + " -o " + str(min_overlap) + " -a " + str_of_abundance_min + " -l " + str(max_length) + " -subs " + str(max_subs) + " -out " + olc_outDir + " -assembly " + output_file
     olcLog = str(gap_label) + "_olc.log"
 
     with open(olcLog, "a") as log:

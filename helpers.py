@@ -330,6 +330,7 @@ def extend(assembly, len_read, seedDict):
                     # Current extension not already in extGroup.
                     else:
                         added_to_extGroup = False
+                        
             # Current extension not already in extGroup.
             if not added_to_extGroup:
                 extGroup[read_seq[len(assembly)-index:]] = [[read_seq, index]]
