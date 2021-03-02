@@ -113,9 +113,9 @@ class Graph:
 #----------------------------------------------------
 # index_read function
 #----------------------------------------------------
-def index_read(read, i, read_rc, seedDict):
+def index_read(read, i, read_rc, seedDictStart, seedDictMiddle):
     """To index a read by its seed.
-    It updates a dictionary 'seedDict': key = seed's sequence ; value = list of positions of reads having this seed in readList
+    It updates two dictionaries 'seedDictStart' and 'seedDictMiddle': key = seed's sequence ; value = list of positions of reads having this seed in readList
 
     Args:
         - read: str
@@ -124,32 +124,50 @@ def index_read(read, i, read_rc, seedDict):
             position of the current read in readList (list containing all reads' sequences)
         - read_rc: str
             sequence of the reverse complement of the current read
-        - seedDict: dict
-            this function will output a dictionary: key = seed's sequence ; value = list of positions of reads having this seed in readList
+        - seedDictStart: dict
+            this function will output a dictionary: key = start seed's sequence ; value = list of positions of reads having this seed in readList
+            NB: we are interested in reads having this seed at the beginning of their sequence
+        - seedDictMiddle: dict
+            this function will output a dictionary: key = middle seed's sequence ; value = list of positions of reads having this seed in readList
+            NB: we are interested in reads having this seed at the middle of their sequence
 
     Outputs:
-        - seedDict: dict
-            dictionary of reads indexed by their seed: key = seed's sequence ; value = list of positions of reads having this seed in readList
+        - seedDictStart and seedDictMiddle: dict
+            dictionaries of reads indexed by their seed: key = seed's sequence ; value = list of positions of reads having this seed in readList
     """
-    # Index read by its seed.
+    # Index read by its start seed.
     seed = read[:seed_size]
-    if seed in seedDict:
-        seedDict[seed].append(str(i))
+    if seed in seedDictStart:
+        seedDictStart[seed].append(str(i))
     else:
-        seedDict[seed] = [str(i)]
+        seedDictStart[seed] = [str(i)]
 
-    # Index reverse complement of read by its seed as well.
+    # Index reverse complement of read by its start seed as well.
     seed = read_rc[:seed_size]
-    if seed in seedDict:
-        seedDict[seed].append("-"+str(i))
+    if seed in seedDictStart:
+        seedDictStart[seed].append("-"+str(i))
     else:
-        seedDict[seed] = ["-"+str(i)]
+        seedDictStart[seed] = ["-"+str(i)]
+
+    # Index read by its middle seed.
+    seed = read[int(len(read)/2):int(len(read)/2)+seed_size]
+    if seed in seedDictMiddle:
+        seedDictMiddle[seed].append(str(i))
+    else:
+        seedDictMiddle[seed] = [str(i)]
+
+    # Index reverse complement of read by its middle seed as well.
+    seed = read_rc[int(len(read)/2):int(len(read)/2)+seed_size]
+    if seed in seedDictMiddle:
+        seedDictMiddle[seed].append("-"+str(i))
+    else:
+        seedDictMiddle[seed] = ["-"+str(i)]
 
 
 #----------------------------------------------------
 # find_overlapping_reads function
 #----------------------------------------------------
-def find_overlapping_reads(assembly, len_read, seedDict):
+def find_overlapping_reads(assembly, len_read, seedDictStart, seedDictMiddle):
     """
     To find the reads overlapping with the current assembly's sequence S
     The list 'overlapping_reads' it returns is sorted automatically by smallest i, e.g. by largest overlap
@@ -159,8 +177,10 @@ def find_overlapping_reads(assembly, len_read, seedDict):
             current assembly's sequence
         - len_read: int
             length of the read from which we want to extend
-        - seedDict: dict
-            dictionary of reads indexed by their seed: key = seed's sequence ; value = list of positions of reads having this seed in readList
+        - seedDictStart / seedDictMiddle: dict
+            dictionaries of reads indexed by their seed: key = seed's sequence ; value = list of positions of reads having this seed in readList
+            NB: seedDictStart: we are interested in reads having this seed at the beginning of their sequence
+                seedDictMiddle: we are interested in reads having this seed at the middle of their sequence
 
     Returns:
         - overlapping_reads: list
@@ -168,14 +188,23 @@ def find_overlapping_reads(assembly, len_read, seedDict):
             referenced as [read's sequence, index of beginning of overlap]
     """
     overlapping_reads = []
+    putative_reads = []
 
     # Get the putative reads (e.g. reads having a seed onto the current assembly's sequence).
     for i in range(len(assembly)-len_read+1, len(assembly)-min_overlap-seed_size):
         seed = assembly[i:i+seed_size]
-        if seed in seedDict:
-            putative_reads = seedDict[seed]
 
-            # For each putative read, search for an overlap between the current assembly's sequence and the putative read.
+        # Check if seed in seedDictStart and/or seedDictMiddle and get the corresponding putative reads. 
+        if seed in seedDictStart:
+            putative_reads = seedDictStart[seed]
+        if seed in seedDictMiddle:
+            if putative_reads is None:
+                putative_reads = seedDictMiddle[seed]
+            else:
+                putative_reads.extend(seedDictMiddle[seed])
+
+        # For each putative read, search for an overlap between the current assembly's sequence and the putative read.
+        if putative_reads is not None:
             for put_read in putative_reads:
                 nb_substitutions = 0
                 l = i + seed_size
@@ -213,7 +242,7 @@ def find_overlapping_reads(assembly, len_read, seedDict):
 #----------------------------------------------------
 # extend function
 #----------------------------------------------------
-def extend(assembly, len_read, seedDict, assemblyHash):
+def extend(assembly, len_read, seedDictStart, seedDictMiddle, assemblyHash):
     """
     To extend a read's sequence with overlapping reads
     The Boolean value it returns represents the success of the gap-filling
@@ -226,8 +255,10 @@ def extend(assembly, len_read, seedDict, assemblyHash):
             current assembly's sequence
         - len_read: int
             length of the read from which we want to extend
-        - seedDict: dict
-            dictionary of reads indexed by their seed: key = seed's sequence ; value = list of positions of reads having this seed in readList
+        - seedDictStart / seedDictMiddle: dict
+            dictionaries of reads indexed by their seed: key = seed's sequence ; value = list of positions of reads having this seed in readList
+            NB: seedDictStart: we are interested in reads having this seed at the beginning of their sequence
+                seedDictMiddle: we are interested in reads having this seed at the middle of their sequence
         - assemblyHash = hashtable/dict
             hashtable/dictionary indicating if the search for overlapping reads has already been performed on the corresponding sequence (key):
             key = the last 70 bp of the current assembly's sequence ; value = Boolean value (0: overlapping reads search not performed / 1: overlapping reads search performed)
@@ -260,7 +291,7 @@ def extend(assembly, len_read, seedDict, assemblyHash):
             return "\nPath already explored: No solution", False
             
     # Search for reads overlapping with the current assembly's sequence.
-    overlapping_reads = find_overlapping_reads(assembly, len_read, seedDict)
+    overlapping_reads = find_overlapping_reads(assembly, len_read, seedDictStart, seedDictMiddle)
     if not overlapping_reads:
         with open(tmp_solutions, "a") as tmp_file:
             tmp_file.write(">" + input_seqName + " _ No_read_overlapping")
@@ -387,7 +418,7 @@ def extend(assembly, len_read, seedDict, assemblyHash):
         else:
             assemblyHash[(assembly+extension)[-70:]] = 0
         
-        res, success = extend(assembly+extension, len(extGroup_filtered[extension][0][0]), seedDict, assemblyHash)
+        res, success = extend(assembly+extension, len(extGroup_filtered[extension][0][0]), seedDictStart, seedDictMiddle, assemblyHash)
         '''
         res, success = extend(assembly+extension, extGroup_filtered[extension][0][0], seedDict, graph)
         '''

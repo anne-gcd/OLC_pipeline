@@ -4,7 +4,7 @@
 The module 'olc.py' contains the pipeline of the gap-filling using an OLC method.
 Three main variables are used in this pipeline:
 - readList = list of all reads' sequences
-- seedDict = dictionary containing the seed's sequence as key, and the list of positions (i) of reads having this seed in readList as value (-pos if revcomp of read)
+- seedDictStart/seedDictMiddle = dictionaries containing the seed's sequence as key, and the list of positions (i) of reads having this seed in readList as value (-pos if revcomp of read)
 - readWithStart = list of all reads containing the full sequence of the kmer start, along with the index of the beginning of the kmer start's subsequence,
                 referenced as a sublist of the readWithStart list: [position of the read in readList, index of beginning of kmer start's subsequence]
 - assemblyHash = hashtable/dictionary containing the last 70 bp of the current assembly's sequence as key, and a Boolean value (indicating if the search for overlapping reads was already performed) as value
@@ -27,17 +27,18 @@ sys.setrecursionlimit(50000)
 #----------------------------------------------------
 try:
     # Initiate the four main variables.
-    seedDict = {}
+    seedDictStart = {}
+    seedDictMiddle = {}
     readWithStart = []
     pos_read_in_readList = 0
     assemblyHash = {}
 
-    # Iterate over the reads of 'readList' to obtain the 'seedDict' dictionary and the 'readWithStart' list.
+    # Iterate over the reads of 'readList' to obtain the 'seedDictStart' and 'seedDictMiddle' dictionaries, as well as the 'readWithStart' list.
     for read in readList:
         # Get the reverse complement of the current read.
         read_rc = str(Seq(read).reverse_complement())
-        # Seed the read and update the 'seedDict' dictionary.
-        index_read(read, pos_read_in_readList, read_rc, seedDict)
+        # Seed the read and update the 'seedDictStart' and 'seedDictMiddle' dictionaries.
+        index_read(read, pos_read_in_readList, read_rc, seedDictStart, seedDictMiddle)
         # Search if the read contains the whole kmer START's sequence and update the 'readWithStart' list.
         if START in read:
             readWithStart.append([str(pos_read_in_readList), read.index(START)])
@@ -64,7 +65,7 @@ try:
 
         # Extend the assembly sequence (e.g. the current read containing the whole kmer start's sequence) using the function 'extend()'
         assemblyHash[read[-70:]] = 0
-        res, success = extend(read, len(read), seedDict, assemblyHash)
+        res, success = extend(read, len(read), seedDictStart, seedDictMiddle, assemblyHash)
 
         # Case of unsuccessful gap-filling.
         if not success:
