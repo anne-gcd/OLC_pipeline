@@ -113,9 +113,9 @@ class Graph:
 #----------------------------------------------------
 # index_read function
 #----------------------------------------------------
-def index_read(read, i, read_rc, seedDictStart, seedDictMiddle):
+def index_read(read, i, read_rc, seedDict1, seedDict2):
     """To index a read by its seed.
-    It updates two dictionaries 'seedDictStart' and 'seedDictMiddle': key = seed's sequence ; value = list of positions of reads having this seed in readList
+    It updates two dictionaries 'seedDict1' and 'seedDict2': key = seed's sequence ; value = list of positions of reads having this seed in readList
 
     Args:
         - read: str
@@ -124,50 +124,48 @@ def index_read(read, i, read_rc, seedDictStart, seedDictMiddle):
             position of the current read in readList (list containing all reads' sequences)
         - read_rc: str
             sequence of the reverse complement of the current read
-        - seedDictStart: dict
+        - seedDict1 / seedDict2: dict
             this function will output a dictionary: key = start seed's sequence ; value = list of positions of reads having this seed in readList
-            NB: we are interested in reads having this seed at the beginning of their sequence
-        - seedDictMiddle: dict
-            this function will output a dictionary: key = middle seed's sequence ; value = list of positions of reads having this seed in readList
-            NB: we are interested in reads having this seed at the middle of their sequence
+            NB: seedDict1: we are interested in reads having this seed at the very beginning in their sequence
+                seedDict2: we are interested in reads having this seed a little further than the very beginning in their sequence
 
     Outputs:
-        - seedDictStart and seedDictMiddle: dict
+        - seedDict1 and seedDict2: dict
             dictionaries of reads indexed by their seed: key = seed's sequence ; value = list of positions of reads having this seed in readList
     """
-    # Index read by its start seed.
+    # Index read by its very beginning seed.
     seed = read[:seed_size]
-    if seed in seedDictStart:
-        seedDictStart[seed].append(str(i))
+    if seed in seedDict1:
+        seedDict1[seed].append(str(i))
     else:
-        seedDictStart[seed] = [str(i)]
+        seedDict1[seed] = [str(i)]
 
-    # Index reverse complement of read by its start seed as well.
+    # Index reverse complement of read by its very beginning seed as well.
     seed = read_rc[:seed_size]
-    if seed in seedDictStart:
-        seedDictStart[seed].append("-"+str(i))
+    if seed in seedDict1:
+        seedDict1[seed].append("-"+str(i))
     else:
-        seedDictStart[seed] = ["-"+str(i)]
+        seedDict1[seed] = ["-"+str(i)]
 
-    # Index read by its middle seed.
-    seed = read[int(len(read)/2):int(len(read)/2)+seed_size]
-    if seed in seedDictMiddle:
-        seedDictMiddle[seed].append(str(i))
+    # Index read by its further seed.
+    seed = read[(seed_size+10):(2*seed_size+10)]
+    if seed in seedDict2:
+        seedDict2[seed].append(str(i))
     else:
-        seedDictMiddle[seed] = [str(i)]
+        seedDict2[seed] = [str(i)]
 
-    # Index reverse complement of read by its middle seed as well.
-    seed = read_rc[int(len(read)/2):int(len(read)/2)+seed_size]
-    if seed in seedDictMiddle:
-        seedDictMiddle[seed].append("-"+str(i))
+    # Index reverse complement of read by its further seed as well.
+    seed = read_rc[(seed_size+10):(2*seed_size+10)]
+    if seed in seedDict2:
+        seedDict2[seed].append("-"+str(i))
     else:
-        seedDictMiddle[seed] = ["-"+str(i)]
+        seedDict2[seed] = ["-"+str(i)]
 
 
 #----------------------------------------------------
 # find_overlapping_reads function
 #----------------------------------------------------
-def find_overlapping_reads(assembly, len_read, seedDictStart, seedDictMiddle):
+def find_overlapping_reads(assembly, len_read, seedDict1, seedDict2):
     """
     To find the reads overlapping with the current assembly's sequence S
     The list 'overlapping_reads' it returns is sorted automatically by smallest i, e.g. by largest overlap
@@ -177,15 +175,15 @@ def find_overlapping_reads(assembly, len_read, seedDictStart, seedDictMiddle):
             current assembly's sequence
         - len_read: int
             length of the read from which we want to extend
-        - seedDictStart / seedDictMiddle: dict
+        - seedDict1 / seedDict2: dict
             dictionaries of reads indexed by their seed: key = seed's sequence ; value = list of positions of reads having this seed in readList
-            NB: seedDictStart: we are interested in reads having this seed at the beginning of their sequence
-                seedDictMiddle: we are interested in reads having this seed at the middle of their sequence
+            NB: seedDict1: we are interested in reads having this seed at the very beginning in their sequence
+                seedDict2: we are interested in reads having this seed a little further than the very beginning in their sequence
 
     Returns:
         - overlapping_reads: list
-            list containing all the overlapping reads' sequences, along with the index of the beginning of the overlap,
-            referenced as [read's sequence, index of beginning of overlap]
+            list containing all the overlapping reads' sequences, along with the index of the beginning of the overlap, 
+            as well as the seedDict origin ('seed1' or 'seed2'), referenced as [read's sequence, index of beginning of overlap, seedDict origin]
     """
     overlapping_reads = []
     putative_reads = []
@@ -194,21 +192,20 @@ def find_overlapping_reads(assembly, len_read, seedDictStart, seedDictMiddle):
     for i in range(len(assembly)-len_read+1, len(assembly)-min_overlap-seed_size):
         seed = assembly[i:i+seed_size]
 
-        # Check if seed in seedDictStart and/or seedDictMiddle and get the corresponding putative reads. 
-        if seed in seedDictStart:
-            putative_reads = seedDictStart[seed]
-        if seed in seedDictMiddle:
-            if putative_reads is None:
-                putative_reads = seedDictMiddle[seed]
+        # Check if seed in seedDict1 and/or seedDict2 and get the corresponding putative reads. 
+        if seed in seedDict1.keys():
+            putative_reads = seedDict1[seed].copy()
+        if seed in seedDict2.keys():
+            if not putative_reads:
+                putative_reads = seedDict2[seed].copy()
             else:
-                putative_reads.extend(seedDictMiddle[seed])
+                putative_reads.extend(seedDict2[seed])
 
         # For each putative read, search for an overlap between the current assembly's sequence and the putative read.
-        if putative_reads is not None:
+        if putative_reads:
             for put_read in putative_reads:
                 nb_substitutions = 0
                 l = i + seed_size
-                j = seed_size
                 length_overlap = 0
 
                 # Get the sequence of the read.
@@ -217,24 +214,55 @@ def find_overlapping_reads(assembly, len_read, seedDictStart, seedDictMiddle):
                 else:
                     read = readList[int(put_read)]
 
-                while l < len(assembly) and j < len(read):
-                    # Match.
-                    if assembly[l] == read[j]:
-                        l += 1
-                        j += 1
-                        length_overlap += 1
-                    # Mismatch (error in reads: we allow [max_subs] substitutions maximum).
-                    elif nb_substitutions < max_subs:
-                        l += 1
-                        j += 1
-                        length_overlap += 1
-                        nb_substitutions += 1
-                    else:
-                        break
+                # Finding whether put_read exists in values of seedDict1.
+                ## NB: priority to seed at the very beginning of the read's sequence (seedDict1). 
+                if (seed in seedDict1.keys()) and (put_read in seedDict1[seed]):
+                    j = seed_size
+                
+                    # Search for an overlap between the assembly and the read. 
+                    while l < len(assembly) and j < len(read):
+                        # Match.
+                        if assembly[l] == read[j]:
+                            l += 1
+                            j += 1
+                            length_overlap += 1
+                        # Mismatch (error in reads: we allow [max_subs] substitutions maximum).
+                        elif nb_substitutions < max_subs:
+                            l += 1
+                            j += 1
+                            length_overlap += 1
+                            nb_substitutions += 1
+                        else:
+                            break
 
-                # Overlap found.
-                if l == len(assembly):
-                    overlapping_reads.append([read, i])
+                    # Overlap found.
+                    if l == len(assembly):
+                        overlapping_reads.append([read, i, "seed1"])
+
+
+                # If put_read not in seedDict1, then it is in seedDict2.
+                else:
+                    j = 2*seed_size + 10
+
+                    # Search for an overlap between the assembly and the read. 
+                    while l < len(assembly) and j < len(read):
+                        # Match.
+                        if assembly[l] == read[j]:
+                            l += 1
+                            j += 1
+                            length_overlap += 1
+                        # Mismatch (error in reads: we allow [max_subs] substitutions maximum).
+                        elif nb_substitutions < max_subs:
+                            l += 1
+                            j += 1
+                            length_overlap += 1
+                            nb_substitutions += 1
+                        else:
+                            break
+
+                    # Overlap found.
+                    if l == len(assembly):
+                        overlapping_reads.append([read, i, "seed2"])
 
     return overlapping_reads
 
@@ -242,7 +270,7 @@ def find_overlapping_reads(assembly, len_read, seedDictStart, seedDictMiddle):
 #----------------------------------------------------
 # extend function
 #----------------------------------------------------
-def extend(assembly, len_read, seedDictStart, seedDictMiddle, assemblyHash):
+def extend(assembly, len_read, seedDict1, seedDict2, assemblyHash):
     """
     To extend a read's sequence with overlapping reads
     The Boolean value it returns represents the success of the gap-filling
@@ -255,10 +283,10 @@ def extend(assembly, len_read, seedDictStart, seedDictMiddle, assemblyHash):
             current assembly's sequence
         - len_read: int
             length of the read from which we want to extend
-        - seedDictStart / seedDictMiddle: dict
+        - seedDict1 / seedDict2: dict
             dictionaries of reads indexed by their seed: key = seed's sequence ; value = list of positions of reads having this seed in readList
-            NB: seedDictStart: we are interested in reads having this seed at the beginning of their sequence
-                seedDictMiddle: we are interested in reads having this seed at the middle of their sequence
+            NB: seedDict1: we are interested in reads having this seed at the very beginning in their sequence
+                seedDict2: we are interested in reads having this seed a little further than the very beginning in their sequence
         - assemblyHash = hashtable/dict
             hashtable/dictionary indicating if the search for overlapping reads has already been performed on the corresponding sequence (key):
             key = the last 70 bp of the current assembly's sequence ; value = Boolean value (0: overlapping reads search not performed / 1: overlapping reads search performed)
@@ -291,7 +319,7 @@ def extend(assembly, len_read, seedDictStart, seedDictMiddle, assemblyHash):
             return "\nPath already explored: No solution", False
             
     # Search for reads overlapping with the current assembly's sequence.
-    overlapping_reads = find_overlapping_reads(assembly, len_read, seedDictStart, seedDictMiddle)
+    overlapping_reads = find_overlapping_reads(assembly, len_read, seedDict1, seedDict2)
     if not overlapping_reads:
         with open(tmp_solutions, "a") as tmp_file:
             tmp_file.write(">" + input_seqName + " _ No_read_overlapping")
@@ -303,79 +331,157 @@ def extend(assembly, len_read, seedDictStart, seedDictMiddle, assemblyHash):
 
     # Populate extGroup.
     '''NB: overlapping_reads list sorted automatically by smallest i, e.g. by largest overlap'''
-    for (read_seq, index) in overlapping_reads:
+    for (read_seq, index, nb_seed) in overlapping_reads:
 
-        # If no extension, don't add it to extGroup.
-        if read_seq[len(assembly)-index:] == "":
-            continue
+        # Overlap starting with seed1
+        if nb_seed == "seed1":
 
-        # Add first extension to extGroup.
-        if len(extGroup) == 0:
-            extGroup[read_seq[len(assembly)-index:]] = [[read_seq, index]]
+            # If no extension, don't add it to extGroup.
+            if read_seq[len(assembly)-index:] == "":
+                continue
 
-        # Add all extensions to extGroup.
-        elif len(extGroup) > 0:
-            for extension in extGroup:
-
-                # Check that current extension is smaller than the one(s) in extGroup.
-                if len(read_seq[len(assembly)-index:]) < len(extension):
-                    # Current extension already in extGroup.
-                    if read_seq[len(assembly)-index:] == extension[:len(read_seq[len(assembly)-index:])]:
-                        new_extension = read_seq[len(assembly)-index:]
-                        extGroup[new_extension] = extGroup[extension]
-                        extGroup[new_extension].append([read_seq, index])
-                        del extGroup[extension]
-                        added_to_extGroup = True
-                        break
-                    # Current extension is partially in extGroup.
-                    elif read_seq[len(assembly)-index] == extension[0]:
-                        i = 1
-                        while i < len(read_seq[len(assembly)-index:]):
-                            if read_seq[len(assembly)-index+i] == extension[i]:
-                                i += 1
-                            else:
-                                break
-                        new_extension = extension[:i]
-                        extGroup[new_extension] = extGroup[extension]
-                        extGroup[new_extension].append([read_seq, index])
-                        del extGroup[extension]
-                        added_to_extGroup = True
-                        break
-                    # Current extension not already in extGroup.
-                    else:
-                        added_to_extGroup = False
-
-                # Current extension is not smaller than the one(s) in extGroup.
-                else:
-                    # Current extension already in extGroup.
-                    if read_seq[len(assembly)-index:len(assembly)-index+len(extension)] == extension:
-                        extGroup[extension].append([read_seq, index])
-                        added_to_extGroup = True
-                        break
-                    # Current extension is partially in extGroup.
-                    elif read_seq[len(assembly)-index] == extension[0]:
-                        i = 1
-                        while i < len(extension):
-                            if read_seq[len(assembly)-index+i] == extension[i]:
-                                i += 1
-                            else:
-                                break
-                        new_extension = extension[:i]
-                        extGroup[new_extension] = extGroup[extension]
-                        extGroup[new_extension].append([read_seq, index])
-                        del extGroup[extension]
-                        added_to_extGroup = True
-                        break
-                    # Current extension not already in extGroup.
-                    else:
-                        added_to_extGroup = False
-                        
-            # Current extension not already in extGroup.
-            if not added_to_extGroup:
+            # Add first extension to extGroup.
+            if len(extGroup) == 0:
                 extGroup[read_seq[len(assembly)-index:]] = [[read_seq, index]]
 
-        # Sort extGroup by the smallest extension.
-        extGroup = collections.OrderedDict(sorted(extGroup.items(), key=lambda t: len(t[0])))
+            # Add all extensions to extGroup.
+            elif len(extGroup) > 0:
+                for extension in extGroup:
+
+                    # Check that current extension is smaller than the one(s) in extGroup.
+                    if len(read_seq[len(assembly)-index:]) < len(extension):
+                        # Current extension already in extGroup.
+                        if read_seq[len(assembly)-index:] == extension[:len(read_seq[len(assembly)-index:])]:
+                            new_extension = read_seq[len(assembly)-index:]
+                            extGroup[new_extension] = extGroup[extension]
+                            extGroup[new_extension].append([read_seq, index])
+                            del extGroup[extension]
+                            added_to_extGroup = True
+                            break
+                        # Current extension is partially in extGroup.
+                        elif read_seq[len(assembly)-index] == extension[0]:
+                            i = 1
+                            while i < len(read_seq[len(assembly)-index:]):
+                                if read_seq[len(assembly)-index+i] == extension[i]:
+                                    i += 1
+                                else:
+                                    break
+                            new_extension = extension[:i]
+                            extGroup[new_extension] = extGroup[extension]
+                            extGroup[new_extension].append([read_seq, index])
+                            del extGroup[extension]
+                            added_to_extGroup = True
+                            break
+                        # Current extension not already in extGroup.
+                        else:
+                            added_to_extGroup = False
+
+                    # Current extension is not smaller than the one(s) in extGroup.
+                    else:
+                        # Current extension already in extGroup.
+                        if read_seq[len(assembly)-index:len(assembly)-index+len(extension)] == extension:
+                            extGroup[extension].append([read_seq, index])
+                            added_to_extGroup = True
+                            break
+                        # Current extension is partially in extGroup.
+                        elif read_seq[len(assembly)-index] == extension[0]:
+                            i = 1
+                            while i < len(extension):
+                                if read_seq[len(assembly)-index+i] == extension[i]:
+                                    i += 1
+                                else:
+                                    break
+                            new_extension = extension[:i]
+                            extGroup[new_extension] = extGroup[extension]
+                            extGroup[new_extension].append([read_seq, index])
+                            del extGroup[extension]
+                            added_to_extGroup = True
+                            break
+                        # Current extension not already in extGroup.
+                        else:
+                            added_to_extGroup = False
+                            
+                # Current extension not already in extGroup.
+                if not added_to_extGroup:
+                    extGroup[read_seq[len(assembly)-index:]] = [[read_seq, index]]
+
+            # Sort extGroup by the smallest extension.
+            extGroup = collections.OrderedDict(sorted(extGroup.items(), key=lambda t: len(t[0])))
+
+        # Overlap starting with seed2
+        if nb_seed == "seed2":
+
+            # If no extension, don't add it to extGroup.
+            if read_seq[len(assembly)-index+seed_size+10:] == "":
+                continue
+
+            # Add first extension to extGroup.
+            if len(extGroup) == 0:
+                extGroup[read_seq[len(assembly)-index+seed_size+10:]] = [[read_seq, index]]
+
+            # Add all extensions to extGroup.
+            elif len(extGroup) > 0:
+                for extension in extGroup:
+
+                    # Check that current extension is smaller than the one(s) in extGroup.
+                    if len(read_seq[len(assembly)-index+seed_size+10:]) < len(extension):
+                        # Current extension already in extGroup.
+                        if read_seq[len(assembly)-index+seed_size+10:] == extension[:len(read_seq[len(assembly)-index+seed_size+10:])]:
+                            new_extension = read_seq[len(assembly)-index+seed_size+10:]
+                            extGroup[new_extension] = extGroup[extension]
+                            extGroup[new_extension].append([read_seq, index])
+                            del extGroup[extension]
+                            added_to_extGroup = True
+                            break
+                        # Current extension is partially in extGroup.
+                        elif read_seq[len(assembly)-index+seed_size+10] == extension[0]:
+                            i = 1
+                            while i < len(read_seq[len(assembly)-index+seed_size+10:]):
+                                if read_seq[len(assembly)-index+seed_size+10+i] == extension[i]:
+                                    i += 1
+                                else:
+                                    break
+                            new_extension = extension[:i]
+                            extGroup[new_extension] = extGroup[extension]
+                            extGroup[new_extension].append([read_seq, index])
+                            del extGroup[extension]
+                            added_to_extGroup = True
+                            break
+                        # Current extension not already in extGroup.
+                        else:
+                            added_to_extGroup = False
+
+                    # Current extension is not smaller than the one(s) in extGroup.
+                    else:
+                        # Current extension already in extGroup.
+                        if read_seq[len(assembly)-index+seed_size+10:len(assembly)-index+seed_size+10+len(extension)] == extension:
+                            extGroup[extension].append([read_seq, index])
+                            added_to_extGroup = True
+                            break
+                        # Current extension is partially in extGroup.
+                        elif read_seq[len(assembly)-index+seed_size+10] == extension[0]:
+                            i = 1
+                            while i < len(extension):
+                                if read_seq[len(assembly)-index+seed_size+10+i] == extension[i]:
+                                    i += 1
+                                else:
+                                    break
+                            new_extension = extension[:i]
+                            extGroup[new_extension] = extGroup[extension]
+                            extGroup[new_extension].append([read_seq, index])
+                            del extGroup[extension]
+                            added_to_extGroup = True
+                            break
+                        # Current extension not already in extGroup.
+                        else:
+                            added_to_extGroup = False
+                            
+                # Current extension not already in extGroup.
+                if not added_to_extGroup:
+                    extGroup[read_seq[len(assembly)-index+seed_size+10:]] = [[read_seq, index]]
+
+            # Sort extGroup by the smallest extension.
+            extGroup = collections.OrderedDict(sorted(extGroup.items(), key=lambda t: len(t[0])))
 
     # Update 'assemblyHash' to indicate that we performed the search for overlapping reads on this region (e.g. on the last 70 bp of the current assembly's sequence).
     assemblyHash[assembly[-70:]] = 1
@@ -418,7 +524,7 @@ def extend(assembly, len_read, seedDictStart, seedDictMiddle, assemblyHash):
         else:
             assemblyHash[(assembly+extension)[-70:]] = 0
         
-        res, success = extend(assembly+extension, len(extGroup_filtered[extension][0][0]), seedDictStart, seedDictMiddle, assemblyHash)
+        res, success = extend(assembly+extension, len(extGroup_filtered[extension][0][0]), seedDict1, seedDict2, assemblyHash)
         '''
         res, success = extend(assembly+extension, extGroup_filtered[extension][0][0], seedDict, graph)
         '''
