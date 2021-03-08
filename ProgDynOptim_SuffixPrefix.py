@@ -132,23 +132,23 @@ class DynamicMatrixOptim:
  
 
 
-#Test
-print("\n")
-print("###########")
-print("Indels dans R with 4 gaps allowed so dmax = 4")
-print("###########")
-S = "GCGCTGCTTCCATGATCGATCGAATCGACTAG"
-R = "ATCGATGGAAATTCACTAGTCC"
-i = 14
-dm = DynamicMatrixOptim(S[(i-7):], R, 4, -4)
-dist, posG, posR = dm.getEditDistanceAndGenomePosition()
-print(f"Best edit distance of {dist} at position {posG} on Genome. Extension begins at position {posR} on Read.")
-#RESULTS:
-'''Best edit distance of 4 at position 7 on Genome. Extension begins at position 19 on Read.'''
-#ALIGNMENT:
-'''
-TTCCATG ATCGAT C GAA    TC G ACTAG 
-        |||||| . ||| -- || - |||||
-        ATCGAT G GAA AT TC   ACTAG TCC
-'''
+# #Test
+# print("\n")
+# print("###########")
+# print("Indels dans R with 4 gaps allowed so dmax = 4")
+# print("###########")
+# S = "GCGCTGCTTCCATGATCGATCGAATCGACTAG"
+# R = "ATCGATGGAAATTCACTAGTCC"
+# i = 14
+# dm = DynamicMatrixOptim(S[(i-7):], R, 4, -4)
+# dist, posG, posR = dm.getEditDistanceAndGenomePosition()
+# print(f"Best edit distance of {dist} at position {posG} on Genome. Extension begins at position {posR} on Read.")
+# #RESULTS:
+# '''Best edit distance of 4 at position 7 on Genome. Extension begins at position 19 on Read.'''
+# #ALIGNMENT:
+# '''
+# TTCCATG ATCGAT C GAA    TC G ACTAG 
+#         |||||| . ||| -- || - |||||
+#         ATCGAT G GAA AT TC   ACTAG TCC
+# '''
 
