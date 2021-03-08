@@ -7,6 +7,7 @@ The module 'helpers.py' contains the classes and functions used in the script OL
 import collections
 from Bio.Seq import Seq
 from main import STOP, input_seqName, seed_size, min_overlap, list_of_abundance_min, max_length, max_subs, readList
+from ProgDynOptim_SuffixPrefix import DynamicMatrixOptim
 
 
 #----------------------------------------------------
@@ -164,8 +165,8 @@ def find_overlapping_reads(assembly, len_read, seedDict):
 
     Returns:
         - overlapping_reads: list
-            list containing all the overlapping reads' sequences, along with the index of the beginning of the overlap,
-            referenced as [read's sequence, index of beginning of overlap]
+            list containing all the overlapping reads' sequences, along with the index of the beginning of the overlap, and the index of the beginning of extension
+            referenced as [read's sequence, index of beginning of overlap, index of beginning of extension]
     """
     overlapping_reads = []
 
@@ -175,37 +176,26 @@ def find_overlapping_reads(assembly, len_read, seedDict):
         if seed in seedDict:
             putative_reads = seedDict[seed]
 
-            # For each putative read, search for an overlap between the current assembly's sequence and the putative read.
+            # For each putative read, search for an overlap between the current assembly's sequence and the putative read, using the dynamic programmation.
             for put_read in putative_reads:
-                nb_substitutions = 0
-                l = i + seed_size
-                j = seed_size
-                length_overlap = 0
 
                 # Get the sequence of the read.
                 if '-' in str(put_read):
                     read = str(Seq(readList[int(put_read.split('-')[1])]).reverse_complement())
                 else:
                     read = readList[int(put_read)]
-
-                while l < len(assembly) and j < len(read):
-                    # Match.
-                    if assembly[l] == read[j]:
-                        l += 1
-                        j += 1
-                        length_overlap += 1
-                    # Mismatch (error in reads: we allow [max_subs] substitutions maximum).
-                    elif nb_substitutions < max_subs:
-                        l += 1
-                        j += 1
-                        length_overlap += 1
-                        nb_substitutions += 1
-                    else:
-                        break
-
+                
+                # Perform the alignment with the optimized dynamic programmation.
+                dm = DynamicMatrixOptim(assembly[(i-7):], put_read, 4, -4)
+                dist, posG, posR = dm.getEditDistanceAndGenomePosition()
+                
                 # Overlap found.
-                if l == len(assembly):
-                    overlapping_reads.append([read, i])
+                if dist != 'None':
+                    overlapping_reads.append([read, i, posR])
+
+                #TODO: filtrer par dist ?
+                #TODO: verifier qu'on a bien un alignement suffix-prefix et que donc l'alignement se termine quand on atteint len(G)
+                    #Normalement renvoie 'None, None, None' si la fin de G et R ne s'alignent pas
 
     return overlapping_reads
 
@@ -272,41 +262,41 @@ def extend(assembly, len_read, seedDict, assemblyHash):
 
     # Populate extGroup.
     '''NB: overlapping_reads list sorted automatically by smallest i, e.g. by largest overlap'''
-    for (read_seq, index) in overlapping_reads:
+    for (read_seq, posS, posR) in overlapping_reads:
 
         # If no extension, don't add it to extGroup.
-        if read_seq[len(assembly)-index:] == "":
+        if read_seq[posR:] == "":
             continue
 
         # Add first extension to extGroup.
         if len(extGroup) == 0:
-            extGroup[read_seq[len(assembly)-index:]] = [[read_seq, index]]
+            extGroup[read_seq[posR:]] = [[read_seq, posS]]
 
         # Add all extensions to extGroup.
         elif len(extGroup) > 0:
             for extension in extGroup:
 
                 # Check that current extension is smaller than the one(s) in extGroup.
-                if len(read_seq[len(assembly)-index:]) < len(extension):
+                if len(read_seq[posR:]) < len(extension):
                     # Current extension already in extGroup.
-                    if read_seq[len(assembly)-index:] == extension[:len(read_seq[len(assembly)-index:])]:
-                        new_extension = read_seq[len(assembly)-index:]
+                    if read_seq[posR:] == extension[:len(read_seq[posR:])]:
+                        new_extension = read_seq[posR:]
                         extGroup[new_extension] = extGroup[extension]
-                        extGroup[new_extension].append([read_seq, index])
+                        extGroup[new_extension].append([read_seq, posS])
                         del extGroup[extension]
                         added_to_extGroup = True
                         break
                     # Current extension is partially in extGroup.
-                    elif read_seq[len(assembly)-index] == extension[0]:
+                    elif read_seq[posR] == extension[0]:
                         i = 1
-                        while i < len(read_seq[len(assembly)-index:]):
-                            if read_seq[len(assembly)-index+i] == extension[i]:
+                        while i < len(read_seq[posR:]):
+                            if read_seq[posR+i] == extension[i]:
                                 i += 1
                             else:
                                 break
                         new_extension = extension[:i]
                         extGroup[new_extension] = extGroup[extension]
-                        extGroup[new_extension].append([read_seq, index])
+                        extGroup[new_extension].append([read_seq, posS])
                         del extGroup[extension]
                         added_to_extGroup = True
                         break
@@ -317,21 +307,21 @@ def extend(assembly, len_read, seedDict, assemblyHash):
                 # Current extension is not smaller than the one(s) in extGroup.
                 else:
                     # Current extension already in extGroup.
-                    if read_seq[len(assembly)-index:len(assembly)-index+len(extension)] == extension:
-                        extGroup[extension].append([read_seq, index])
+                    if read_seq[posR:posR+len(extension)] == extension:
+                        extGroup[extension].append([read_seq, posS])
                         added_to_extGroup = True
                         break
                     # Current extension is partially in extGroup.
-                    elif read_seq[len(assembly)-index] == extension[0]:
+                    elif read_seq[posR] == extension[0]:
                         i = 1
                         while i < len(extension):
-                            if read_seq[len(assembly)-index+i] == extension[i]:
+                            if read_seq[posR+i] == extension[i]:
                                 i += 1
                             else:
                                 break
                         new_extension = extension[:i]
                         extGroup[new_extension] = extGroup[extension]
-                        extGroup[new_extension].append([read_seq, index])
+                        extGroup[new_extension].append([read_seq, posS])
                         del extGroup[extension]
                         added_to_extGroup = True
                         break
@@ -341,7 +331,7 @@ def extend(assembly, len_read, seedDict, assemblyHash):
                         
             # Current extension not already in extGroup.
             if not added_to_extGroup:
-                extGroup[read_seq[len(assembly)-index:]] = [[read_seq, index]]
+                extGroup[read_seq[posR:]] = [[read_seq, posS]]
 
         # Sort extGroup by the smallest extension.
         extGroup = collections.OrderedDict(sorted(extGroup.items(), key=lambda t: len(t[0])))
