@@ -110,6 +110,7 @@ class DynamicMatrixOptim:
         ## ATTENTION: start from the bottom-right corner, and goes back to the left to find pmin.
         if len(self.R) < len(self.G):
             pmin = 2*self.dmax + 1 - (len(self.G) - len(self.R))
+            if pmin < 0: pmin = 0                                   #ATTN: pmin can't be negative
         else:
             pmin = 2*self.dmax + 1
         scoreMin = self.nextLine[pmin]
