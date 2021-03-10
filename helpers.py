@@ -6,8 +6,8 @@ The module 'helpers.py' contains the classes and functions used in the script OL
 
 import collections
 from Bio.Seq import Seq
-from main import STOP, input_seqName, seed_size, min_overlap, list_of_abundance_min, max_length, max_subs, readList
-from ProgDynOptim_SuffixPrefix import DynamicMatrixOptim
+from main import STOP, input_seqName, seed_size, min_overlap, list_of_abundance_min, max_length, dmax, readList
+from ProgDynOptim import DynamicMatrixOptim
 
 
 #----------------------------------------------------
@@ -187,7 +187,7 @@ def find_overlapping_reads(assembly, len_read, seedDict):
                 
                 # Perform the alignment with the optimized dynamic programmation.
                 ##NB: Allow 4 gaps/substitutions
-                dm = DynamicMatrixOptim(assembly[(i+seed_size):], read[seed_size:], 4)
+                dm = DynamicMatrixOptim(assembly[(i+seed_size):], read[seed_size:], dmax)
                 dist, posR = dm.getEditDistanceAndGenomePosition()
                 
                 # Overlap found.
