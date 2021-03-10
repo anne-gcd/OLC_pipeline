@@ -18,7 +18,7 @@ class DynamicMatrixOptim:
         * does not backtrack, instead stores for each cell, the starting position of G (optional for the "OLC" program)
     """
 
-    def __init__(self, G, R, dmax, j_centre):
+    def __init__(self, G, R, dmax):
         '''Defines and stores initial values'''
         
         self.G = G
@@ -27,11 +27,10 @@ class DynamicMatrixOptim:
         self.mismatch = 1
         self.gap = 1
         self.dmax = dmax
-        self.j_centre = j_centre
         self.MAX = 150
         
         # These two lines store the edit distances.
-        self.prevLine = [0 for i in range(2*self.dmax+3)]
+        self.prevLine = [i - (dmax+1) for i in range(2*self.dmax+3)]
         self.nextLine = [0 for i in range(2*self.dmax+3)]
 
         # Set both the first and last cells to MAX value (to stop recurrence at the extremities of the line).
@@ -41,8 +40,8 @@ class DynamicMatrixOptim:
         self.nextLine[2*self.dmax+2] = self.MAX
         
         # # These two lines store the starting position of R.
-        # self.prevStart = [self.j_centre - self.dmax + i-1 for i in range(2*self.dmax+3)]
-        # self.nextStart = [self.j_centre - self.dmax + i-1 for i in range(2*self.dmax+3)]
+        # self.prevStart = [- self.dmax + i-1 for i in range(2*self.dmax+3)]
+        # self.nextStart = [- self.dmax + i-1 for i in range(2*self.dmax+3)]
 
 
     def score(self, s, t):
@@ -59,7 +58,7 @@ class DynamicMatrixOptim:
 
         # Loop on genome positions.
         for i in range(1,len(self.G)+1):            #i-1: position in genome (i: line position on full matrix in basic ProgDyn_SuffixPrefix)        
-            j = i + self.j_centre - self.dmax       #j-1: postion in read (j: beginning position in self.nextLine)
+            j = i - self.dmax                       #j-1: postion in read (j: beginning position in self.nextLine)
             p = 1                                   #p: position in self.prevLine
 
             # At the beginning, we have lots of cells that extend beyond the matrix on the left, and that we don't need to fill.
@@ -73,7 +72,7 @@ class DynamicMatrixOptim:
 
                 # First column: only '0' (no gap penalties).
                 if j == 0:
-                    self.nextLine[p] = 0
+                    self.nextLine[p] = i
                     j += 1
                     p += 1
                     continue
@@ -104,7 +103,7 @@ class DynamicMatrixOptim:
 
             # If the minimum value of nextLine > dmax, stop the alignment.
             if min(self.nextLine) > self.dmax:
-                return None, None, None
+                return None, None
 
             # Once nextLine is filled, prevLine is replaced by nextLine (same for start positions).
             ## ATTENTION: self.prev = self.next (if self.next is modified then self.prev if modified as well).
@@ -126,36 +125,44 @@ class DynamicMatrixOptim:
 
         # If edit distance > dmax, return 'None, None'.
         if scoreMin > self.dmax:
-        	return None, None, None
+        	return None, None
                        
         # # Get the beginning position of the alignment/overlap on G (0-based).
         # posG = -self.nextStart[pmin]     #self.nextStart[pmin]: beginning position of the alignment on R
 
         # Get jMin to get the position on the read that corresponds to the end of the overlap (0-based).
-        jMin = len(self.G) + self.j_centre - self.dmax + pmin - 1
+        jMin = len(self.G) - self.dmax + pmin - 1
 
         return scoreMin, jMin
  
 
 
 ##Test
-# print("\n")
-# print("###########")
-# print("Indels dans R with 4 gaps allowed so dmax = 4")
-# print("###########")
-# S = "GCGCTGCTTCCATGATCGATCGAATCGACTAG"
-# R = "ATCGATGGAAATTCACTAGTCC"
-# i = 14
-# dm = DynamicMatrixOptim(S[(i-7):], R, 4, -4)
-## NB: uncomment the prevStart/nextStart implementation lines to get posG
+print("\n")
+print("###########")
+print("Indels dans R with 4 gaps allowed so dmax = 4")
+print("###########")
+S = "GCGCTGCTTAATATGATCGATCGATCGAATCGACTAG"
+R = "AATATGATCGATCGATGGAAATTCACTAGTCC"
+i = 9
+s = 10
+print(S[(i+s):])
+print(R[s:])
+dm = DynamicMatrixOptim(S[(i+s):], R[s:], 4)
+# NB: uncomment the prevStart/nextStart implementation lines to get posG
 # dist, posG, posR = dm.getEditDistanceAndGenomePosition()
 # print(f"Best edit distance of {dist} at position {posG} on Genome. Extension begins at position {posR} on Read.")
-# #RESULTS:
-# '''Best edit distance of 4 at position 7 on Genome. Extension begins at position 19 on Read.'''
-# #ALIGNMENT:
-# '''
-# TTCCATG ATCGAT C GAA    TC G ACTAG 
-#         |||||| . ||| -- || - |||||
-#         ATCGAT G GAA AT TC   ACTAG TCC
-# '''
-
+dist, posR = dm.getEditDistanceAndGenomePosition()
+if posR is not None:
+    posExt = posR + s
+else:
+    posExt = None
+print(f"Best edit distance of {dist}. Extension begins at position {posR} on R[s:]. Extension begins at position {posExt} on R.")
+#RESULTS:
+'''Best edit distance of 4. Extension begins at position 19 on Read[s:]. Extension begins at position 29 on R.'''
+#ALIGNMENT:
+'''
+ATCGAT C GAA    TC G ACTAG 
+|||||| . ||| -- || - |||||
+ATCGAT G GAA AT TC   ACTAG TCC
+'''
