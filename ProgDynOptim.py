@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
-"""Module 'ProgDynOptim_SuffixPrefix.py': class of an optimized dynamic programmation
+"""Module 'ProgDynOptim.py': class of an optimized dynamic programmation
 
-The module 'ProgDynOptim_SuffixPrefix.py' contains the class of an optimized dynamic programmation, 
-that is used to determine the alignment between two sequences overlapping (e.g. a suffix-prefix alignment). 
+The module 'ProgDynOptim.py' contains the class of an optimized dynamic programmation, 
+that is used to determine the alignment between two sequences overlapping.
+But we determine the alignment after the seed sequence so it is equivalent to a global alignment. 
 """
 
 
 class DynamicMatrixOptim:
     """The class 'DynamicMatrixOptim' contains all the attributes, properties and methods to create a DynamicMatrixOptim object.
 
-    Optimisation of DynamicMatrix to get the edit distance of the suffix-prefix alignment of sequences G (genome) and R (read)
+    Optimisation of DynamicMatrix to get the edit distance of the global alignment of sequences G (genome) and R (read)
     The score system {match, mismatch, gap} is fixed to get the edit distance : {0, 1, 1}
-    Defines suffix-prefix alignment functions
+    Defines global alignment functions
     Optimisations:
         * constrained in a band of width 2*dmax+1
         * keeping in memory only 2 lines of size 2*dmax+3 (+ 3 because: size of band = 2*dmax+1, +1 first cell and +1 last cell (both fixed to MAX value)
@@ -30,6 +31,7 @@ class DynamicMatrixOptim:
         self.MAX = 150
         
         # These two lines store the edit distances.
+        ## First line (prevLine here): gap penalties.
         self.prevLine = [i - (dmax+1) for i in range(2*self.dmax+3)]
         self.nextLine = [0 for i in range(2*self.dmax+3)]
 
@@ -54,7 +56,7 @@ class DynamicMatrixOptim:
     def getEditDistanceAndGenomePosition(self):
         '''Method to return the edit distance (optimal score on last line = scoreMin) 
            and beginning position of the alignment on the sequence G (0-based) (optional for the "OLC" program)'''
-        '''It "fills" the matrix in suffix-prefix mode, but constrained in a band of width 2*dmax+1 and keeping in memory only 2 lines of size 2*dmax+3'''
+        '''It "fills" the matrix in global mode, but constrained in a band of width 2*dmax+1 and keeping in memory only 2 lines of size 2*dmax+3'''
 
         # Loop on genome positions.
         for i in range(1,len(self.G)+1):            #i-1: position in genome (i: line position on full matrix in basic ProgDyn_SuffixPrefix)        
@@ -70,7 +72,7 @@ class DynamicMatrixOptim:
             # Start filling the two lines from the cells that are really in the matrix.
             while p <= 2*self.dmax+1 and j >= 0:
 
-                # First column: only '0' (no gap penalties).
+                # First column: gap penalties.
                 if j == 0:
                     self.nextLine[p] = i
                     j += 1
