@@ -139,32 +139,78 @@ class DynamicMatrixOptim:
  
 
 
-##Test
-print("\n")
-print("###########")
-print("Indels dans R with 4 gaps allowed so dmax = 4")
-print("###########")
-S = "GCGCTGCTTAATATGATCGATCGATCGAATCGACTAG"
-R = "AATATGATCGATCGATGGAAATTCACTAGTCC"
-i = 9
-s = 10
-print(S[(i+s):])
-print(R[s:])
-dm = DynamicMatrixOptim(S[(i+s):], R[s:], 4)
-# NB: uncomment the prevStart/nextStart implementation lines to get posG
-# dist, posG, posR = dm.getEditDistanceAndGenomePosition()
-# print(f"Best edit distance of {dist} at position {posG} on Genome. Extension begins at position {posR} on Read.")
-dist, posR = dm.getEditDistanceAndGenomePosition()
-if posR is not None:
-    posExt = posR + s
-else:
-    posExt = None
-print(f"Best edit distance of {dist}. Extension begins at position {posR} on R[s:]. Extension begins at position {posExt} on R.")
-#RESULTS:
-'''Best edit distance of 4. Extension begins at position 19 on Read[s:]. Extension begins at position 29 on R.'''
-#ALIGNMENT:
-'''
-ATCGAT C GAA    TC G ACTAG 
-|||||| . ||| -- || - |||||
-ATCGAT G GAA AT TC   ACTAG TCC
-'''
+
+# ## Tests
+
+# # Basic test
+# print("\n")
+# print("###########")
+# print("Indels dans R with 4 gaps allowed so dmax = 4")
+# print("###########")
+# S = "GCGCTGCTTAATATGATCGATCGATCGAATCGACTAG"
+# R = "AATATGATCGATCGATGGAAATTCACTAGTCC"
+# i = 9
+# s = 10
+# print(S[(i+s):])
+# print(R[s:])
+# dm = DynamicMatrixOptim(S[(i+s):], R[s:], 4)
+# # NB: uncomment the prevStart/nextStart implementation lines to get posG
+# # dist, posG, posR = dm.getEditDistanceAndGenomePosition()
+# # print(f"Best edit distance of {dist} at position {posG} on Genome. Extension begins at position {posR} on Read.")
+# dist, posR = dm.getEditDistanceAndGenomePosition()
+# if posR is not None:
+#     posExt = posR + s
+# else:
+#     posExt = None
+# print(f"Best edit distance of {dist}. Extension begins at position {posR} on R[s:]. Extension begins at position {posExt} on R.")
+# #RESULTS:
+# '''Best edit distance of 4. Extension begins at position 19 on Read[s:]. Extension begins at position 29 on R.'''
+# #ALIGNMENT:
+# '''
+# ATCGAT C GAA    TC G ACTAG 
+# |||||| . ||| -- || - |||||
+# ATCGAT G GAA AT TC   ACTAG TCC
+# '''
+
+# # |R| <= |G|
+# print("\n")
+# print("###########")
+# print("|R| <= |G|")
+# print("###########")
+# S = "GCGCTGCTTAATATGATCGATCGATCGAATCGACTAG"
+# R = "AATATGATCGATCGATGAACTAGTCC"
+# i = 9
+# s = 10
+# print(S[(i+s):])
+# print(R[s:])
+# dm = DynamicMatrixOptim(S[(i+s):], R[s:], 7)
+# dist, posR = dm.getEditDistanceAndGenomePosition()
+# if posR is not None:
+#     posExt = posR + s
+# else:
+#     posExt = None
+# print(f"Best edit distance of {dist}. Extension begins at position {posR} on R[s:]. Extension begins at position {posExt} on R.")
+# #RESULTS:
+# '''Best edit distance of 5. Extension begins at position 13 on R[s:]. Extension begins at position 23 on R.'''
+
+# # |G| <= |R|
+# print("\n")
+# print("###########")
+# print("|G| <= |R|")
+# print("###########")
+# S = "GCGCTGCTTAATATGATCGATCGTCGATACTAG"
+# R = "AATATGATCGATCGATGGAAATTCACTAGTCC"
+# i = 9
+# s = 10
+# print(S[(i+s):])
+# print(R[s:])
+# dm = DynamicMatrixOptim(S[(i+s):], R[s:], 7)
+# dist, posR = dm.getEditDistanceAndGenomePosition()
+# if posR is not None:
+#     posExt = posR + s
+# else:
+#     posExt = None
+# print(f"Best edit distance of {dist}. Extension begins at position {posR} on R[s:]. Extension begins at position {posExt} on R.")
+# #RESULTS:
+# '''Best edit distance of 6. Extension begins at position 19 on R[s:]. Extension begins at position 29 on R.'''
+
