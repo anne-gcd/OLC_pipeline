@@ -188,7 +188,7 @@ def find_overlapping_reads(assembly, len_read, seedDict):
                 # Perform the alignment with the optimized dynamic programmation.
                 ##NB: Allow 4 gaps/substitutions
                 dm = DynamicMatrixOptim(assembly[i:], read, 4, -4)
-                dist, posG, posR = dm.getEditDistanceAndGenomePosition()
+                dist, posR = dm.getEditDistanceAndGenomePosition()
                 
                 # Overlap found.
                 if dist != None:

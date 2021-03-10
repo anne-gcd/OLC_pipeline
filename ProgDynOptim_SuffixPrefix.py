@@ -15,7 +15,7 @@ class DynamicMatrixOptim:
     Optimisations:
         * constrained in a band of width 2*dmax+1
         * keeping in memory only 2 lines of size 2*dmax+3 (+ 3 because: size of band = 2*dmax+1, +1 first cell and +1 last cell (both fixed to MAX value)
-        * does not backtrack, instead stores for each cell, the starting position of G
+        * does not backtrack, instead stores for each cell, the starting position of G (optional for the "OLC" program)
     """
 
     def __init__(self, G, R, dmax, j_centre):
@@ -40,9 +40,9 @@ class DynamicMatrixOptim:
         self.nextLine[0] = self.MAX
         self.nextLine[2*self.dmax+2] = self.MAX
         
-        # These two lines store the starting position of R.
-        self.prevStart = [self.j_centre - self.dmax + i-1 for i in range(2*self.dmax+3)]
-        self.nextStart = [self.j_centre - self.dmax + i-1 for i in range(2*self.dmax+3)]
+        # # These two lines store the starting position of R.
+        # self.prevStart = [self.j_centre - self.dmax + i-1 for i in range(2*self.dmax+3)]
+        # self.nextStart = [self.j_centre - self.dmax + i-1 for i in range(2*self.dmax+3)]
 
 
     def score(self, s, t):
@@ -53,7 +53,8 @@ class DynamicMatrixOptim:
 
 
     def getEditDistanceAndGenomePosition(self):
-        '''Method to return the edit distance (optimal score on last line = scoreMin) and beginning position of the alignment on the sequence G (0-based)'''
+        '''Method to return the edit distance (optimal score on last line = scoreMin) 
+           and beginning position of the alignment on the sequence G (0-based) (optional for the "OLC" program)'''
         '''It "fills" the matrix in suffix-prefix mode, but constrained in a band of width 2*dmax+1 and keeping in memory only 2 lines of size 2*dmax+3'''
 
         # Loop on genome positions.
@@ -91,20 +92,24 @@ class DynamicMatrixOptim:
                 # Get the minimal value among the 3 possible scores. 
                 if diag <= vert and diag <= hori:           #'<=': gives the priority to diagonal if ex-aequo in scores
                     self.nextLine[p] = diag
-                    self.nextStart[p] = self.prevStart[p]
+                    # self.nextStart[p] = self.prevStart[p]
                 elif vert < diag and vert <= hori:
                     self.nextLine[p] = vert
-                    self.nextStart[p] = self.prevStart[p+1]
+                    # self.nextStart[p] = self.prevStart[p+1]
                 else:
                     self.nextLine[p] = hori
-                    self.nextStart[p] = self.nextStart[p-1]
+                    # self.nextStart[p] = self.nextStart[p-1]
                 j += 1
                 p += 1
+
+            # If the minimum value of nextLine > dmax, stop the alignment.
+            if min(self.nextLine) > self.dmax:
+                return None, None, None
 
             # Once nextLine is filled, prevLine is replaced by nextLine (same for start positions).
             ## ATTENTION: self.prev = self.next (if self.next is modified then self.prev if modified as well).
             self.prevLine = list(self.nextLine)             #or self.prev=self.next[:]
-            self.prevStart = list(self.nextStart)
+            # self.prevStart = list(self.nextStart)
 
         # Find where to start the backtracking, searching the optimal score on the last line (e.g. find p with optimal score).
         ## ATTENTION: start from the bottom-right corner, and goes back to the left to find pmin.
@@ -123,17 +128,17 @@ class DynamicMatrixOptim:
         if scoreMin > self.dmax:
         	return None, None, None
                        
-        # Get the beginning position of the alignment/overlap on G (0-based).
-        posG = -self.nextStart[pmin]     #self.nextStart[pmin]: beginning position of the alignment on R
+        # # Get the beginning position of the alignment/overlap on G (0-based).
+        # posG = -self.nextStart[pmin]     #self.nextStart[pmin]: beginning position of the alignment on R
 
         # Get jMin to get the position on the read that corresponds to the end of the overlap (0-based).
         jMin = len(self.G) + self.j_centre - self.dmax + pmin - 1
 
-        return scoreMin, posG, jMin
+        return scoreMin, jMin
  
 
 
-# #Test
+##Test
 # print("\n")
 # print("###########")
 # print("Indels dans R with 4 gaps allowed so dmax = 4")
@@ -142,6 +147,7 @@ class DynamicMatrixOptim:
 # R = "ATCGATGGAAATTCACTAGTCC"
 # i = 14
 # dm = DynamicMatrixOptim(S[(i-7):], R, 4, -4)
+## NB: uncomment the prevStart/nextStart implementation lines to get posG
 # dist, posG, posR = dm.getEditDistanceAndGenomePosition()
 # print(f"Best edit distance of {dist} at position {posG} on Genome. Extension begins at position {posR} on Read.")
 # #RESULTS:
