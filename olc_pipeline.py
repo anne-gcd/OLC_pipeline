@@ -39,7 +39,7 @@ parserOLC.add_argument('-o', dest="min_overlap", action="store", type=int, help=
 parserOLC.add_argument('-a', dest="abundance_min", action="store", nargs='*', type=int, default=[3, 2], help="Minimal abundance(s) of reads used for gapfilling ; extension's groups having less than this number of reads are discarded from the graph")
 parserOLC.add_argument('-ext', dest="extension", action="store", type=int, default=500, help="Extension size of the gap on both sides (bp); determine start/end of gapfilling [default: '500']")
 parserOLC.add_argument('-l', dest="max_length", action="store", type=int, help="Maximum assembly length (bp) (it could correspond to the length of the gap to fill (+ length START/STOP + 2*ext) OR it could be a very high length to prevent for searching indefinitely", required=True)
-parserOLC.add_argument('-subs', dest="max_subs", action="store", type=int, default=2, help="Maximum number of substitutions allowed in the inexact overlap between reads")
+parserOLC.add_argument('-dmax', dest="max_score", action="store", type=int, default=2, help="Maximum number of gaps/substitutions allowed in the inexact overlap between reads")
 
 args = parser.parse_args()
 
@@ -258,12 +258,12 @@ def gapfilling(current_gap):
     list_of_abundance_min = args.abundance_min
     str_of_abundance_min = ' '.join(map(str, list_of_abundance_min))
     max_length = args.max_length
-    max_subs = args.max_subs
+    dmax = args.max_score
     olc_outDir = "./s{}o{}".format(seed_size, min_overlap)
     output_file = "{}.g{}.c{}.s{}.o{}.olc_gapfilling.fasta".format(str(gap_label), gap.length, args.chunk, seed_size, min_overlap)
 
     #Perform the gap-filling with OLC
-    olc_command = str(sys.path[0]) + "/olc.py -in " + input_file + " -reads " + input_reads_file + " -s " + str(seed_size) + " -o " + str(min_overlap) + " -a " + str_of_abundance_min + " -l " + str(max_length) + " -subs " + str(max_subs) + " -out " + olc_outDir + " -assembly " + output_file
+    olc_command = str(sys.path[0]) + "/olc.py -in " + input_file + " -reads " + input_reads_file + " -s " + str(seed_size) + " -o " + str(min_overlap) + " -a " + str_of_abundance_min + " -l " + str(max_length) + " -dmax " + str(dmax) + " -out " + olc_outDir + " -assembly " + output_file
     olcLog = str(gap_label) + "_olc.log"
 
     with open(olcLog, "a") as log:
