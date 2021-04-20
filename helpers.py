@@ -5,6 +5,7 @@ The module 'helpers.py' contains the classes and functions used in the script OL
 """
 
 import collections
+import itertools
 from Bio.Seq import Seq
 from main import STOP, input_seqName, seed_size, min_overlap, list_of_abundance_min, max_length, dmax, readList
 from ProgDynOptim import DynamicMatrixOptim
@@ -365,9 +366,15 @@ def extend(assembly, len_read, seedDict, assemblyHash):
     graph.create_graph_from_extensions(read, extGroup)
     '''
 
+    # If there are many possible extensions, iterate over the 5 first extensions.
+    if len(extGroup_filtered) > 5:
+        final_extGroup = dict(itertools.islice(extGroup_filtered.items(), 5))
+    else:
+        final_extGroup = extGroup_filtered.copy()
+
     # Iterative extension of the assembly's sequence S.
-    for extension in extGroup_filtered:
-        
+    for extension in final_extGroup:
+
         # Update 'assemblyHash' with the new region for which we will search for overlapping reads (with value '0' if search not already performed, or with value '1' if search already performed).
         if (assembly+extension)[-70:] in assemblyHash.keys():
             assemblyHash[(assembly+extension)[-70:]] = 1
