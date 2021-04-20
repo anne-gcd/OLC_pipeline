@@ -154,9 +154,9 @@ class DynamicMatrixOptim:
 # print(S[(i+s):])
 # print(R[s:])
 # dm = DynamicMatrixOptim(S[(i+s):], R[s:], 4)
-# # NB: uncomment the prevStart/nextStart implementation lines to get posG
-# # dist, posG, posR = dm.getEditDistanceAndGenomePosition()
-# # print(f"Best edit distance of {dist} at position {posG} on Genome. Extension begins at position {posR} on Read.")
+# # # NB: uncomment the prevStart/nextStart implementation lines to get posG
+# # # dist, posG, posR = dm.getEditDistanceAndGenomePosition()
+# # # print(f"Best edit distance of {dist} at position {posG} on Genome. Extension begins at position {posR} on Read.")
 # dist, posR = dm.getEditDistanceAndGenomePosition()
 # if posR is not None:
 #     posExt = posR + s
@@ -167,9 +167,9 @@ class DynamicMatrixOptim:
 # '''Best edit distance of 4. Extension begins at position 19 on Read[s:]. Extension begins at position 29 on R.'''
 # #ALIGNMENT:
 # '''
-# ATCGAT C GAA    TC G ACTAG 
-# |||||| . ||| -- || - |||||
-# ATCGAT G GAA AT TC   ACTAG TCC
+# ATCGAT C G   AAT CG ACTAG 
+# |||||| . | - ||| .. |||||
+# ATCGAT G G A AAT TC ACTAG TCC
 # '''
 
 # # |R| <= |G|
