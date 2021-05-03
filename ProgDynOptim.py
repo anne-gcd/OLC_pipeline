@@ -112,6 +112,11 @@ class DynamicMatrixOptim:
             self.prevLine = list(self.nextLine)             #or self.prev=self.next[:]
             # self.prevStart = list(self.nextStart)
 
+        # Determinate the dmax for this overlap (dmax variable, whose value depends on the overlap size).
+        dmax_overlap = round(i / 10)
+        if min(self.nextLine) > dmax_overlap:
+            return None, None
+        
         # Find where to start the backtracking, searching the optimal score on the last line (e.g. find p with optimal score).
         ## ATTENTION: start from the bottom-right corner, and goes back to the left to find pmin.
         if len(self.R) < len(self.G):
@@ -142,18 +147,19 @@ class DynamicMatrixOptim:
 
 # ## Tests
 
-# # Basic test
+# # Basic test with no alignment possible (too many InDels/Subs for short overlap)
 # print("\n")
 # print("###########")
-# print("Indels dans R with 4 gaps allowed so dmax = 4")
+# print("Indels dans R with user-defined parameter dmax = 3")
+# print("No alignment")
 # print("###########")
 # S = "GCGCTGCTTAATATGATCGATCGATCGAATCGACTAG"
-# R = "AATATGATCGATCGATGGAAATTCACTAGTCC"
+# R = "AATATGATCGATCGATGGAAATCCACTAGTCC"
 # i = 9
 # s = 10
 # print(S[(i+s):])
 # print(R[s:])
-# dm = DynamicMatrixOptim(S[(i+s):], R[s:], 4)
+# dm = DynamicMatrixOptim(S[(i+s):], R[s:], 3)
 # # # NB: uncomment the prevStart/nextStart implementation lines to get posG
 # # # dist, posG, posR = dm.getEditDistanceAndGenomePosition()
 # # # print(f"Best edit distance of {dist} at position {posG} on Genome. Extension begins at position {posR} on Read.")
@@ -164,26 +170,48 @@ class DynamicMatrixOptim:
 #     posExt = None
 # print(f"Best edit distance of {dist}. Extension begins at position {posR} on R[s:]. Extension begins at position {posExt} on R.")
 # #RESULTS:
-# '''Best edit distance of 4. Extension begins at position 19 on Read[s:]. Extension begins at position 29 on R.'''
+# '''Best edit distance of None. Extension begins at position None on R[s:]. Extension begins at position None on R.'''
+# Overlap sur G = 18 donc dmax_overlap = 2
+
+# # Basic test with alignment possible
+# print("\n")
+# print("###########")
+# print("Indels dans R with user-defined parameter dmax = 3")
+# print("Alignment")
+# print("###########")
+# S = "GCGCTGCTTAATATGATCGATCGATGGAATCGACTAG"
+# R = "AATATGATCGATCGATGGAAATCCACTAGTCC"
+# i = 9
+# s = 10
+# print(S[(i+s):])
+# print(R[s:])
+# dm = DynamicMatrixOptim(S[(i+s):], R[s:], 3)
+# dist, posR = dm.getEditDistanceAndGenomePosition()
+# if posR is not None:
+#     posExt = posR + s
+# else:
+#     posExt = None
+# print(f"Best edit distance of {dist}. Extension begins at position {posR} on R[s:]. Extension begins at position {posExt} on R.")
+# #RESULTS:
+# '''Best edit distance of 2. Extension begins at position 19 on R[s:]. Extension begins at position 29 on R.'''
+# #Overlap sur G = 18 donc dmax_overlap = 2
 # #ALIGNMENT:
-# '''
-# ATCGAT C G   AAT CG ACTAG 
-# |||||| . | - ||| .. |||||
-# ATCGAT G G A AAT TC ACTAG TCC
-# '''
+# ATCGATGGAA   TC G ACTAG
+# |||||||||| - || . |||||
+# ATCGATGGAA A TC C ACTAG TCC
 
 # # |R| <= |G|
 # print("\n")
 # print("###########")
 # print("|R| <= |G|")
 # print("###########")
-# S = "GCGCTGCTTAATATGATCGATCGATCGAATCGACTAG"
+# S = "GCGCTGCTTAATATGATCGATCGATCGAACTAGTCCTAAT"
 # R = "AATATGATCGATCGATGAACTAGTCC"
 # i = 9
 # s = 10
 # print(S[(i+s):])
 # print(R[s:])
-# dm = DynamicMatrixOptim(S[(i+s):], R[s:], 7)
+# dm = DynamicMatrixOptim(S[(i+s):], R[s:], 3)
 # dist, posR = dm.getEditDistanceAndGenomePosition()
 # if posR is not None:
 #     posExt = posR + s
@@ -191,15 +219,15 @@ class DynamicMatrixOptim:
 #     posExt = None
 # print(f"Best edit distance of {dist}. Extension begins at position {posR} on R[s:]. Extension begins at position {posExt} on R.")
 # #RESULTS:
-# '''Best edit distance of 5. Extension begins at position 13 on R[s:]. Extension begins at position 23 on R.'''
+# '''Best edit distance of None. Extension begins at position None on R[s:]. Extension begins at position None on R.'''
 
 # # |G| <= |R|
 # print("\n")
 # print("###########")
 # print("|G| <= |R|")
 # print("###########")
-# S = "GCGCTGCTTAATATGATCGATCGTCGATACTAG"
-# R = "AATATGATCGATCGATGGAAATTCACTAGTCC"
+# S = "GCGCTGCTTAATATGATCGATCGATGATACTAG"
+# R = "AATATGATCGATCGATGATCTAGTCC"
 # i = 9
 # s = 10
 # print(S[(i+s):])
@@ -212,5 +240,10 @@ class DynamicMatrixOptim:
 #     posExt = None
 # print(f"Best edit distance of {dist}. Extension begins at position {posR} on R[s:]. Extension begins at position {posExt} on R.")
 # #RESULTS:
-# '''Best edit distance of 6. Extension begins at position 19 on R[s:]. Extension begins at position 29 on R.'''
+# '''Best edit distance of 1. Extension begins at position 13 on R[s:]. Extension begins at position 23 on R.'''
+# #Overlap sur G = 14 donc dmax_overlap = 1
+# #ALIGNMENT:
+# ATCGATGAT A CTAG
+# ||||||||| - ||||
+# ATCGATGAT   CTAG TCC
 

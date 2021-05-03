@@ -166,7 +166,7 @@ def find_overlapping_reads(assembly, len_read, seedDict):
 
     Returns:
         - overlapping_reads: list
-            list containing all the overlapping reads' sequences, along with the index of the beginning of the overlap, and the index of the beginning of extension,
+            list containing all the overlapping reads' sequences, along with the index of the beginning of the overlap on S, and the index of the beginning of extension on R,
             referenced as [read's sequence, index of beginning of overlap, index of beginning of extension]
     """
     overlapping_reads = []
