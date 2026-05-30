@@ -7,6 +7,7 @@ Three main variables are used in this pipeline:
 - seedDict = dictionary containing the seed's sequence as key, and the list of positions (i) of reads having this seed in readList as value (-pos if revcomp of read)
 - readWithStart = list of all reads containing the full sequence of the kmer start, along with the index of the beginning of the kmer start's subsequence,
                 referenced as a sublist of the readWithStart list: [position of the read in readList, index of beginning of kmer start's subsequence]
+- assemblyHash = hashtable/dictionary containing the last 70 bp of the current assembly's sequence as key, and a Boolean value (indicating if the search for overlapping reads was already performed) as value
 """
 
 from __future__ import print_function
@@ -25,10 +26,11 @@ sys.setrecursionlimit(50000)
 # Gapfilling with Seed-and-Extend approach
 #----------------------------------------------------
 try:
-    # Initiate the three main variables.
+    # Initiate the four main variables.
     seedDict = {}
     readWithStart = []
     pos_read_in_readList = 0
+    assemblyHash = {}
 
     # Iterate over the reads of 'readList' to obtain the 'seedDict' dictionary and the 'readWithStart' list.
     for read in readList:
@@ -61,7 +63,8 @@ try:
             read = readList[int(pos_read)]
 
         # Extend the assembly sequence (e.g. the current read containing the whole kmer start's sequence) using the function 'extend()'
-        res, success = extend(read, len(read), seedDict)
+        assemblyHash[read[-70:]] = 0
+        res, success = extend(read, len(read), seedDict, assemblyHash)
 
         # Case of unsuccessful gap-filling.
         if not success:

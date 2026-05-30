@@ -7,7 +7,7 @@
 
 ```
 # Get a local copy of MTG-Link source code
-git clone --recursive https://github.com/anne-gcd/OLC.git
+git clone --recursive https://github.com/anne-gcd/OLC_pipeline.git
 ```
 
 

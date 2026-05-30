@@ -6,7 +6,7 @@ The module 'helpers.py' contains the classes and functions used in the script OL
 
 import collections
 from Bio.Seq import Seq
-from main import STOP, seed_size, min_overlap, list_of_abundance_min, max_length, max_subs, readList
+from main import STOP, input_seqName, seed_size, min_overlap, list_of_abundance_min, max_length, max_subs, readList
 
 
 #----------------------------------------------------
@@ -213,7 +213,7 @@ def find_overlapping_reads(assembly, len_read, seedDict):
 #----------------------------------------------------
 # extend function
 #----------------------------------------------------
-def extend(assembly, len_read, seedDict):
+def extend(assembly, len_read, seedDict, assemblyHash):
     """
     To extend a read's sequence with overlapping reads
     The Boolean value it returns represents the success of the gap-filling
@@ -228,6 +228,9 @@ def extend(assembly, len_read, seedDict):
             length of the read from which we want to extend
         - seedDict: dict
             dictionary of reads indexed by their seed: key = seed's sequence ; value = list of positions of reads having this seed in readList
+        - assemblyHash = hashtable/dict
+            hashtable/dictionary indicating if the search for overlapping reads has already been performed on the corresponding sequence (key):
+            key = the last 70 bp of the current assembly's sequence ; value = Boolean value (0: overlapping reads search not performed / 1: overlapping reads search performed)
 
     Returns:
         str, Boolean
@@ -251,11 +254,16 @@ def extend(assembly, len_read, seedDict):
     if len(assembly) > max_length:
         return "\n|S| > max_length", False
 
+    if len(assembly) >= 70:
+        # Check that we didn't already search for overlapping reads on this region (e.g. on the last 70 bp of the current assembly's sequence).
+        if assemblyHash[assembly[-70:]] == 1:
+            return "\nPath already explored: No solution", False
+            
     # Search for reads overlapping with the current assembly's sequence.
     overlapping_reads = find_overlapping_reads(assembly, len_read, seedDict)
     if not overlapping_reads:
         with open(tmp_solutions, "a") as tmp_file:
-            tmp_file.write(">No_read_overlapping")
+            tmp_file.write(">" + input_seqName + " _ No_read_overlapping")
             tmp_file.write("\n"+str(assembly)+"\n")
         return "\nNo overlapping reads", False
 
@@ -277,6 +285,7 @@ def extend(assembly, len_read, seedDict):
         # Add all extensions to extGroup.
         elif len(extGroup) > 0:
             for extension in extGroup:
+
                 # Check that current extension is smaller than the one(s) in extGroup.
                 if len(read_seq[len(assembly)-index:]) < len(extension):
                     # Current extension already in extGroup.
@@ -287,9 +296,24 @@ def extend(assembly, len_read, seedDict):
                         del extGroup[extension]
                         added_to_extGroup = True
                         break
+                    # Current extension is partially in extGroup.
+                    elif read_seq[len(assembly)-index] == extension[0]:
+                        i = 1
+                        while i < len(read_seq[len(assembly)-index:]):
+                            if read_seq[len(assembly)-index+i] == extension[i]:
+                                i += 1
+                            else:
+                                break
+                        new_extension = extension[:i]
+                        extGroup[new_extension] = extGroup[extension]
+                        extGroup[new_extension].append([read_seq, index])
+                        del extGroup[extension]
+                        added_to_extGroup = True
+                        break
                     # Current extension not already in extGroup.
                     else:
                         added_to_extGroup = False
+
                 # Current extension is not smaller than the one(s) in extGroup.
                 else:
                     # Current extension already in extGroup.
@@ -297,15 +321,33 @@ def extend(assembly, len_read, seedDict):
                         extGroup[extension].append([read_seq, index])
                         added_to_extGroup = True
                         break
+                    # Current extension is partially in extGroup.
+                    elif read_seq[len(assembly)-index] == extension[0]:
+                        i = 1
+                        while i < len(extension):
+                            if read_seq[len(assembly)-index+i] == extension[i]:
+                                i += 1
+                            else:
+                                break
+                        new_extension = extension[:i]
+                        extGroup[new_extension] = extGroup[extension]
+                        extGroup[new_extension].append([read_seq, index])
+                        del extGroup[extension]
+                        added_to_extGroup = True
+                        break
                     # Current extension not already in extGroup.
                     else:
                         added_to_extGroup = False
+                        
             # Current extension not already in extGroup.
             if not added_to_extGroup:
                 extGroup[read_seq[len(assembly)-index:]] = [[read_seq, index]]
 
         # Sort extGroup by the smallest extension.
         extGroup = collections.OrderedDict(sorted(extGroup.items(), key=lambda t: len(t[0])))
+
+    # Update 'assemblyHash' to indicate that we performed the search for overlapping reads on this region (e.g. on the last 70 bp of the current assembly's sequence).
+    assemblyHash[assembly[-70:]] = 1
 
     # Filter extGroup by the number of reads sharing an extension (argument 'abundance_min').
     for abundance_min in list_of_abundance_min:
@@ -323,7 +365,7 @@ def extend(assembly, len_read, seedDict):
     # If number of reads sharing an extension < minimal 'abundance_min' provided, stop the extension.
     if not extGroup_filtered:
         with open(tmp_solutions, "a") as tmp_file:
-            tmp_file.write(">No_extGroup")
+            tmp_file.write(">" + input_seqName + " _ No_extGroup")
             tmp_file.write("\n"+str(assembly)+"\n")
         return "\nNo extension", False
 
@@ -338,7 +380,14 @@ def extend(assembly, len_read, seedDict):
 
     # Iterative extension of the assembly's sequence S.
     for extension in extGroup_filtered:
-        res, success = extend(assembly+extension, len(extGroup_filtered[extension][0][0]), seedDict)
+        
+        # Update 'assemblyHash' with the new region for which we will search for overlapping reads (with value '0' if search not already performed, or with value '1' if search already performed).
+        if (assembly+extension)[-70:] in assemblyHash.keys():
+            assemblyHash[(assembly+extension)[-70:]] = 1
+        else:
+            assemblyHash[(assembly+extension)[-70:]] = 0
+        
+        res, success = extend(assembly+extension, len(extGroup_filtered[extension][0][0]), seedDict, assemblyHash)
         '''
         res, success = extend(assembly+extension, extGroup_filtered[extension][0][0], seedDict, graph)
         '''

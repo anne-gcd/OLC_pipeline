@@ -28,6 +28,7 @@ parser.add_argument('-a', action="store", dest="abundance_min", nargs='*', type=
 parser.add_argument('-l', action="store", dest="max_length", type=int, help="Maximum assembly length (bp) (it could correspond to the length of the gap to fill (+length input sequences) OR it could be a very high length to prevent for searching indefinitely", required=True)
 parser.add_argument('-subs', action="store", dest="max_subs", type=int, default=2, help="Maximum number of substitutions allowed in the inexact overlap between reads")
 parser.add_argument('-out', action="store", dest="outdir", default="./olc_results", help="Output directory for the results' files")
+parser.add_argument('-assembly', action="store", dest="assembly_file", help="Name for the output assembly file")
 
 args = parser.parse_args()
 
@@ -92,8 +93,7 @@ max_subs = args.max_subs
 # Output file for saving results
 #----------------------------------------------------
 # Create the FASTA file containing all possible gapfilled sequences.
-output_file = "assembly.s{}.o{}.olc_gapfilling.fasta".format(seed_size, min_overlap)
-assembly_file = os.path.abspath(outDir +"/"+ output_file)
+assembly_file = os.path.abspath(outDir +"/"+ args.assembly_file)
 
 #----------------------------------------------------
 # Save reads' sequences in a list
